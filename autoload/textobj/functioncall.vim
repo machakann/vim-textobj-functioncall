@@ -6,8 +6,8 @@
 " 'af' always ignore the string literal region.
 " 'if' might not be always correct...
 
-"                                 #              : cursor position
-" call map(['1', '3', '2'], 'sugoi_func(v:val)')
+"                                   #              : cursor position
+" call map(['1', '3', '2'], 's:sugoi_func(v:val)')
 "
 "                            |<-------if------>|
 " call map(['1', '3', '2'], 's:sugoi_func(v:val)')
