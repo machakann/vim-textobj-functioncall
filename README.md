@@ -29,8 +29,8 @@ let g:textobj_functioncall_no_default_key_mappings = 1
 
 And then map to your preferable keys.
 ```vim
-nmap iF <Plug>(textobj-functioncall-i)
+xmap iF <Plug>(textobj-functioncall-i)
 omap iF <Plug>(textobj-functioncall-i)
-nmap aF <Plug>(textobj-functioncall-a)
+xmap aF <Plug>(textobj-functioncall-a)
 omap aF <Plug>(textobj-functioncall-a)
 ```
