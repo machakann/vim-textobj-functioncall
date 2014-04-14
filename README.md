@@ -34,3 +34,10 @@ omap iF <Plug>(textobj-functioncall-i)
 xmap aF <Plug>(textobj-functioncall-a)
 omap aF <Plug>(textobj-functioncall-a)
 ```
+
+---
+
+お探しのものはこちらかもしれません
+
+→あにゃログ - textobj-xbrackets.vim
+http://www.sopht.jp/blog/index.php?/archives/449-textobj-xbrackets.vim.html
