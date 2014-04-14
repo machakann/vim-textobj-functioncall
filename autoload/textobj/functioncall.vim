@@ -92,40 +92,44 @@ function! s:base_model(mode)  "{{{
 
     if !s:is_string_literal(judge_syn, bra_pos)
       " 'bra' should accompany with 'header'
-      if searchpos(head, 'bcen', orig_pos[0]) == bra_pos
-        let head_pos = searchpos(head, 'bc', orig_pos[0])
+      if searchpos(head, 'bce', orig_pos[0]) == bra_pos
+        let head_pos = searchpos(head, 'bcn', orig_pos[0])
 "         PP! ['head_pos', head_pos]
-        let loop += 1
+
+          " Start searching for the paired tail pattern.
+          " update the syntax information of head
+          let judge_syn = (!s:is_string_literal(((a:mode == 'i') ? 1 : 0), head_pos))
+
+          while 1
+            " search for the paired 'ket'
+            let ket_pos = searchpairpos(bra, '', ket, 'W', 's:is_string_literal(judge_syn, [line("."), col(".")])')
+            if ket_pos == [0, 0]
+              " cannot found
+"               PP! 'cannot find tail_pos'
+              return 0
+            endif
+
+            let tail_pos = searchpos(tail, 'ceW')
+"             PP! ['head_pos', head_pos, 'tail_pos', tail_pos]
+            if tail_pos == [0, 0]
+              return 0
+            elseif !s:is_string_literal(judge_syn, tail_pos) && (searchpos(tail, 'bcn') == ket_pos)
+              " found the corresponded tail
+"               PP! ['successfully found!', 'head_pos', head_pos, 'tail_pos', tail_pos]
+              let loop += 1
+              break
+            else
+              " The footer condition is not matched.
+              call cursor(bra_pos)
+              break
+            endif
+          endwhile
+
 "         PP! [loop, l:count]
       endif
     endif
   endwhile
 
-  " Start searching for the paired tail pattern.
-  " update the syntax information of head
-  let judge_syn = (!s:is_string_literal(((a:mode == 'i') ? 1 : 0), head_pos))
-
-  " move to 'bra'
-  normal! f(
-
-  while 1
-    " search for the paired 'ket'
-    if searchpairpos(bra, '', ket, 'W', 's:is_string_literal(judge_syn, [line("."), col(".")])') == [0, 0]
-      " cannot found
-"       PP! 'cannot find tail_pos'
-      return 0
-    endif
-
-    let tail_pos = searchpos(tail, 'cenW')
-"     PP! ['head_pos', head_pos, 'tail_pos', tail_pos]
-    if tail_pos == [0, 0]
-      continue
-    elseif !s:is_string_literal(judge_syn, tail_pos)
-      " found the corresponded tail
-"       PP! ['successfully found!', 'head_pos', head_pos, 'tail_pos', tail_pos]
-      break
-    endif
-  endwhile
 
 
   return ['v', [0] + head_pos + [0], [0] + tail_pos + [0]]
