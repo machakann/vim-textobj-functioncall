@@ -5,7 +5,7 @@ The vim textobject plugin to treat function-call regions.
 
 Default mappings are assigned to `if` and `af`.
 
-* `if` and 'af' behave differently when the cursor is on a string literal.
+* `if` and `af` behave differently when the cursor is on a string literal.
 * `if` can also recognize function calls inside the string literal.
 * `af` always ignore the string literal region.
 * `if` might not be always correct...
