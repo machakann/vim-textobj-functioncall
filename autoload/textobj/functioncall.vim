@@ -70,8 +70,11 @@ function! s:base_model(mode)  "{{{
   let orig_pos  = [line('.'), col('.')]
   let judge_syn = !s:is_string_literal(((a:mode == 'i') ? 1 : 0), orig_pos)
 
-  " specify filetype-unique pattern
-  let pattern_list = s:resolve_patterns()
+  " user settings
+  let opt_no_default_patterns = s:user_conf('no_default_patterns', 0)
+
+  " pattern-assignment
+  let pattern_list = s:resolve_patterns(opt_no_default_patterns)
 
   let rank       = 0
   let candidates = []
@@ -209,12 +212,74 @@ function! s:is_string_literal(flag, pos)  "{{{
   endif
 endfunction
 "}}}
-function! s:resolve_patterns()  "{{{
-  let filetype = match(keys(s:functioncall_patterns), &filetype) < 0 ? '_' : &filetype
-  let patterns = s:functioncall_patterns[filetype]
-  if type(patterns) == s:type_dict
+function! s:user_conf(name, default)    "{{{
+  let user_conf = a:default
+
+  if exists('g:textobj_functioncall_' . a:name)
+    let user_conf = g:textobj_functioncall_{a:name}
+  endif
+
+  if exists('t:textobj_functioncall_' . a:name)
+    let user_conf = t:textobj_functioncall_{a:name}
+  endif
+
+  if exists('w:textobj_functioncall_' . a:name)
+    let user_conf = w:textobj_functioncall_{a:name}
+  endif
+
+  if exists('b:textobj_functioncall_' . a:name)
+    let user_conf = b:textobj_functioncall_{a:name}
+  endif
+
+  return user_conf
+endfunction
+"}}}
+function! s:resolve_patterns(opt_no_default_patterns)  "{{{
+  if a:opt_no_default_patterns
+    let patterns_dict = get(g:, 'textobj_functioncall_patterns', {})
+    let filetype      = has_key(patterns_dict, &filetype) ? &filetype : '_'
+    let patterns      = get(patterns_dict, filetype, {})
+  else
+    let user_patterns = get(g:, 'textobj_functioncall_patterns', {})
+    let has_filetype_key_default = has_key(s:functioncall_patterns, &filetype)
+    let has_filetype_key_user    = has_key(user_patterns, &filetype)
+
+    if has_filetype_key_default && has_filetype_key_user
+      let user_filetype_patterns    = user_patterns[&filetype]
+      let default_filetype_patterns = s:functioncall_patterns[&filetype]
+
+      if (type(user_filetype_patterns) == s:type_dict) && (type(default_filetype_patterns) == s:type_dict)
+        let patterns = [user_filetype_patterns] + [default_filetype_patterns]
+      elseif (type(user_filetype_patterns) == s:type_dict)
+        let patterns = [user_filetype_patterns] + default_filetype_patterns
+      elseif (type(default_filetype_patterns) == s:type_dict)
+        let patterns = user_filetype_patterns + [default_filetype_patterns]
+      else
+        let patterns = user_filetype_patterns + default_filetype_patterns
+      endif
+    elseif has_filetype_key_user
+      let patterns = user_patterns[&filetype]
+    elseif has_filetype_key_default
+      let patterns = s:functioncall_patterns[&filetype]
+    else
+      let user_filetype_patterns    = user_patterns['_']
+      let default_filetype_patterns = s:functioncall_patterns['_']
+
+      if (type(user_filetype_patterns) == s:type_dict) && (type(default_filetype_patterns) == s:type_dict)
+        let patterns = [user_filetype_patterns] + [default_filetype_patterns]
+      elseif (type(user_filetype_patterns) == s:type_dict)
+        let patterns = [user_filetype_patterns] + default_filetype_patterns
+      elseif (type(default_filetype_patterns) == s:type_dict)
+        let patterns = user_filetype_patterns + [default_filetype_patterns]
+      else
+        let patterns = user_filetype_patterns + default_filetype_patterns
+      endif
+    endif
+  endif
+
+  if (type(patterns) == s:type_dict) && (patterns != {})
     return [[patterns['header'], patterns['bra'], patterns['ket'], patterns['footer']]]
-  elseif type(patterns) == s:type_list
+  elseif type(patterns) == s:type_list && (patterns != [])
     let pattern_list = []
     for pattern in patterns
       let pattern_list += [[pattern['header'], pattern['bra'], pattern['ket'], pattern['footer']]]
