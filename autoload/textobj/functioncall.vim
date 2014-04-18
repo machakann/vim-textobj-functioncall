@@ -13,6 +13,9 @@
 " call map(['1', '3', '2'], 's:sugoi_func(v:val)')
 "      |<------------------af------------------->|
 
+" TODO: The paired bra-ket search engine in string literal.
+" TODO: Embedded comment should be ignored
+
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -262,7 +265,7 @@ function! s:resolve_patterns(opt_no_default_patterns)  "{{{
     elseif has_filetype_key_default
       let patterns = s:functioncall_patterns[&filetype]
     else
-      let user_filetype_patterns    = user_patterns['_']
+      let user_filetype_patterns    = get(user_patterns, '_', {})
       let default_filetype_patterns = s:functioncall_patterns['_']
 
       if (type(user_filetype_patterns) == s:type_dict) && (type(default_filetype_patterns) == s:type_dict)
