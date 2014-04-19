@@ -201,7 +201,11 @@ function! s:base_model(mode)  "{{{
 
     let sorted_candidates = s:sort_candidates(candidates, top_line, bottom_line)
 "     PP! sorted_candidates
-    let [head_pos, tail_pos, dummy1, dummy2] = sorted_candidates[l:count - 1]
+    if len(sorted_candidates) > l:count - 1
+      let [head_pos, tail_pos, dummy1, dummy2] = sorted_candidates[l:count - 1]
+    else
+      return 0
+    endif
 
     return ['v', [0] + head_pos + [0], [0] + tail_pos + [0]]
   endif
