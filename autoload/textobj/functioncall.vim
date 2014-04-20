@@ -74,10 +74,23 @@ function! s:base_model(mode)  "{{{
   let judge_syn = !s:is_string_literal(((a:mode == 'i') ? 1 : 0), orig_pos)
 
   " user settings
-  let opt_no_default_patterns = s:user_conf('no_default_patterns', 0)
+  let opt_no_default_patterns     = s:user_conf(    'no_default_patterns',  0)
+  let opt_search_range_limitation = s:user_conf('search_range_limitation', 30)
 
   " pattern-assignment
   let pattern_list = s:resolve_patterns(opt_no_default_patterns)
+
+  " search range limitation
+  let fileend = line('$')
+  if opt_search_range_limitation < 0
+    let upper_line = 1
+    let lower_line = fileend
+  else
+    let upper_line = orig_pos[0] - opt_search_range_limitation
+    let upper_line = upper_line < 1 ? 1 : upper_line
+    let lower_line = orig_pos[0] + opt_search_range_limitation
+    let lower_line = lower_line > fileend ? fileend : lower_line
+  endif
 
   let rank       = 0
   let candidates = []
@@ -91,11 +104,11 @@ function! s:base_model(mode)  "{{{
     let tail = ket . footer
     while loop < l:count
       if flag ==# 'bcW'
-        let head_start = searchpos(head, 'bcW')
-        let head_end   = searchpos(head, 'ceW')
+        let head_start = searchpos(head, 'bcW', upper_line)
+        let head_end   = searchpos(head, 'ceW', lower_line)
         call cursor(orig_pos)
-        let tail_start = searchpos(tail, 'bcW')
-        let tail_end   = searchpos(tail, 'ceW')
+        let tail_start = searchpos(tail, 'bcW', upper_line)
+        let tail_end   = searchpos(tail, 'ceW', lower_line)
 "         PP! [orig_pos, head, head_start, head_end, tail, tail_start, tail_end]
 "         PP! [(tail_start != [0, 0]), (tail_end != [0, 0]), ((orig_pos[0] > tail_start[0]) || ((orig_pos[0] == tail_start[0]) && (orig_pos[1] >= tail_start[1]))), (((orig_pos[0] == tail_end[0]) || (orig_pos[1] <= tail_end[1])) && (orig_pos[0] < tail_end[0]))]
 
@@ -130,7 +143,7 @@ function! s:base_model(mode)  "{{{
 
       " move to the corresponded 'bra'
       let hoge = [line('.'), col('.'), bra, ket, flag]
-      let bra_pos = searchpairpos(bra, '', ket, flag, 's:is_string_literal(judge_syn, [line("."), col(".")])')
+      let bra_pos = searchpairpos(bra, '', ket, flag, 's:is_string_literal(judge_syn, [line("."), col(".")])', upper_line)
 "       PP! [hoge, bra_pos]
 
       if bra_pos == [0, 0]
@@ -143,8 +156,8 @@ function! s:base_model(mode)  "{{{
 
       if !s:is_string_literal(judge_syn, bra_pos)
         " 'bra' should accompany with 'header'
-        if searchpos(head, 'bcenW') == bra_pos
-          let head_pos = searchpos(head, 'bcnW')
+        if searchpos(head, 'bcenW', upper_line) == bra_pos
+          let head_pos = searchpos(head, 'bcnW', upper_line)
 "           PP! ['head_pos', head_pos]
 
           " Start searching for the paired tail pattern.
@@ -154,7 +167,7 @@ function! s:base_model(mode)  "{{{
           let go_to_next_pattern = 0
           while 1
             " search for the paired 'ket'
-            let ket_pos = searchpairpos(bra, '', ket, 'W', 's:is_string_literal(judge_syn, [line("."), col(".")])')
+            let ket_pos = searchpairpos(bra, '', ket, 'W', 's:is_string_literal(judge_syn, [line("."), col(".")])', lower_line)
             if ket_pos == [0, 0]
               " cannot found
 "               PP! 'cannot find ket_pos, go_to_next_pattern'
@@ -162,12 +175,12 @@ function! s:base_model(mode)  "{{{
               break
             endif
 
-            let tail_pos = searchpos(tail, 'ceW')
+            let tail_pos = searchpos(tail, 'ceW', lower_line)
 "             PP! ['head_pos', head_pos, 'tail_pos', tail_pos]
             if tail_pos == [0, 0]
               let go_to_next_pattern = 1
               break
-            elseif !s:is_string_literal(judge_syn, tail_pos) && (searchpos(tail, 'bcn') == ket_pos)
+            elseif !s:is_string_literal(judge_syn, tail_pos) && (searchpos(tail, 'bcn', upper_line) == ket_pos)
               " found the corresponded tail
 "               PP! ['successfully found!', 'head_pos', head_pos, 'tail_pos', tail_pos]
               let candidates += [[head_pos, tail_pos, rank]]
