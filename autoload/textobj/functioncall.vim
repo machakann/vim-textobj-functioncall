@@ -282,7 +282,7 @@ function! s:resolve_patterns(opt_no_default_patterns)  "{{{
     elseif has_filetype_key_default
       let patterns = s:functioncall_patterns[&filetype]
     else
-      let user_filetype_patterns    = get(user_patterns, '_', {})
+      let user_filetype_patterns    = get(user_patterns, '_', [])
       let default_filetype_patterns = s:functioncall_patterns['_']
 
       if (type(user_filetype_patterns) == s:type_dict) && (type(default_filetype_patterns) == s:type_dict)
