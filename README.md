@@ -37,6 +37,13 @@ omap aF <Plug>(textobj-functioncall-a)
 
 ---
 
+This textobject could select following patterns.
+* `foo()`
+* `bar[]`
+* `baz{}`
+
+---
+
 お探しのものはこちらかもしれません
 
 →あにゃログ - textobj-xbrackets.vim
