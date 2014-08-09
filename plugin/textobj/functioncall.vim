@@ -1,5 +1,5 @@
 " Vim global plugin to define text-object for function call.
-" Last Change: 13-Apr-2014.
+" Last Change: 05-Jul-2014.
 " Maintainer : Masaaki Nakamura <mckn@outlook.com>
 
 " License    : NYSL
@@ -9,7 +9,7 @@
 if exists("g:loaded_textobj_functioncall")
   finish
 endif
-let g:loaded_functioncall = 1
+let g:loaded_textobj_functioncall = 1
 
 call textobj#user#plugin('functioncall', {
       \   '-': {
