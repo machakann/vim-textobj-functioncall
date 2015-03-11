@@ -1,19 +1,6 @@
 " textobj-functioncall
 " Is there any better idea about the name?
 
-" 'if' and 'af' behave differently when the cursor is on a string literal.
-" 'if' can also recognize function calls inside the string literal.
-" 'af' always ignore the string literal region.
-" 'if' might not be always correct...
-
-"                                   #              : cursor position
-" call map(['1', '3', '2'], 's:sugoi_func(v:val)')
-"
-"                            |<-------if------>|
-" call map(['1', '3', '2'], 's:sugoi_func(v:val)')
-"      |<------------------af------------------->|
-
-" TODO: The paired bra-ket search engine in string literal.
 " TODO: Embedded comment should be ignored
 
 let s:save_cpo = &cpo
@@ -21,218 +8,229 @@ set cpo&vim
 
 let s:type_list = type([])
 let s:type_dict = type({})
+let s:null_pos  = [0, 0]
 
 " default patterns
-let s:functioncall_patterns = {}
-let s:functioncall_patterns['_'] = [
-      \ {
-      \ 'header' : '\<\h\k*',
-      \ 'footer' : '',
-      \ 'bra'    : '(',
-      \ 'ket'    : ')',
-      \ },
-      \ {
-      \ 'header' : '\<\h\k*',
-      \ 'footer' : '',
-      \ 'bra'    : '\[',
-      \ 'ket'    : '\]',
-      \ },
-      \ {
-      \ 'header' : '\<\h\k*',
-      \ 'footer' : '',
-      \ 'bra'    : '{',
-      \ 'ket'    : '}',
-      \ },
+let s:patterns = {}
+let s:patterns['_'] = [
+      \   {
+      \     'header' : '\<\h\k*',
+      \     'bra'    : '(',
+      \     'ket'    : ')',
+      \     'footer' : '',
+      \   },
+      \   {
+      \     'header' : '\<\h\k*',
+      \     'bra'    : '\[',
+      \     'ket'    : '\]',
+      \     'footer' : '',
+      \   },
       \ ]
 
-let s:functioncall_patterns['vim'] = [
-      \ {
-      \ 'header' : '\<\%(s:\)\?\k*',
-      \ 'footer' : '',
-      \ 'bra'    : '(',
-      \ 'ket'    : ')',
-      \ },
-      \ {
-      \ 'header' : '\%(^\|[^:]\)\zs\<\%([abglstvw]:\)\?\h\k*',
-      \ 'footer' : '',
-      \ 'bra'    : '\[',
-      \ 'ket'    : '\]',
-      \ },
+let s:patterns['vim'] = [
+      \   {
+      \     'header' : '\<\%(s:\)\?\k*',
+      \     'bra'    : '(',
+      \     'ket'    : ')',
+      \     'footer' : '',
+      \   },
+      \   {
+      \     'header' : '\%(^\|[^:]\)\zs\<\%([abglstvw]:\)\?\h\k*',
+      \     'bra'    : '\[',
+      \     'ket'    : '\]',
+      \     'footer' : '',
+      \   },
       \ ]
 
-function! textobj#functioncall#i()
+function! textobj#functioncall#i() abort
   return s:base_model('i')
 endfunction
 
-function! textobj#functioncall#a()
+function! textobj#functioncall#a() abort
   return s:base_model('a')
 endfunction
 
-function! s:base_model(mode)  "{{{
-  let l:count   = v:count1
-  let orig_pos  = [line('.'), col('.')]
-  let judge_syn = !s:is_string_literal(((a:mode == 'i') ? 1 : 0), orig_pos)
+function! textobj#functioncall#ip() abort
+  return s:base_model('ip')
+endfunction
+
+function! textobj#functioncall#ap() abort
+  return s:base_model('ap')
+endfunction
+
+function! s:base_model(mode) abort  "{{{
+  let l:count = v:count1
 
   " user settings
-  let opt_no_default_patterns     = s:user_conf(    'no_default_patterns',  0)
-  let opt_search_range_limitation = s:user_conf('search_range_limitation', 30)
+  let opt = {}
+  let opt.search_lines = s:user_conf('search_lines' , 30)
 
   " pattern-assignment
-  let pattern_list = s:resolve_patterns(opt_no_default_patterns)
+  let pattern_list = s:resolve_patterns()
 
-  " search range limitation
+  let view = winsaveview()
+  try
+    let candidates = s:gather_candidates(a:mode, l:count, pattern_list, opt)
+    if a:mode[0] ==# 'a' && candidates == []
+      let candidates = s:gather_candidates('i', l:count, pattern_list, opt)
+    endif
+  finally
+    call winrestview(view)
+  endtry
+
+  if candidates == []
+    return 0
+  else
+    let line_numbers = map(copy(candidates), 'v:val[0][0]') + map(copy(candidates), 'v:val[3][0]')
+    let top_line     = min(line_numbers)
+    let bottom_line  = max(line_numbers)
+
+    let sorted_candidates = s:sort_candidates(candidates, top_line, bottom_line)
+    if len(sorted_candidates) > l:count - 1
+      let [head_pos, bra_pos, ket_pos, tail_pos, _, _] = sorted_candidates[l:count - 1]
+    else
+      return 0
+    endif
+
+    if a:mode[1] ==# 'p'
+      if bra_pos == ket_pos || (bra_pos[0] == ket_pos[0] && bra_pos[1]+1 == ket_pos[1]-1)
+        return 0
+      else
+        return ['v', [0, bra_pos[0], bra_pos[1]+1, 0], [0, ket_pos[0], ket_pos[1]-1, 0]]
+      endif
+    else
+      return ['v', [0] + head_pos + [0], [0] + tail_pos + [0]]
+    endif
+  endif
+endfunction
+"}}}
+function! s:gather_candidates(mode, count, pattern_list, opt) abort  "{{{
+  let orig_pos = getpos('.')[1:2]
+
+  " searching range limitation
   let fileend = line('$')
-  if opt_search_range_limitation < 0
+  if a:opt.search_lines < 0
     let upper_line = 1
     let lower_line = fileend
   else
-    let upper_line = orig_pos[0] - opt_search_range_limitation
+    let upper_line = orig_pos[0] - a:opt.search_lines
     let upper_line = upper_line < 1 ? 1 : upper_line
-    let lower_line = orig_pos[0] + opt_search_range_limitation
+    let lower_line = orig_pos[0] + a:opt.search_lines
     let lower_line = lower_line > fileend ? fileend : lower_line
   endif
 
   let rank       = 0
   let candidates = []
-  for pattern in pattern_list
+  for pattern in a:pattern_list
     let rank += 1
-    let [header, bra, ket, footer] = pattern
+    let header = pattern.header
+    let bra    = pattern.bra
+    let ket    = pattern.ket
+    let footer = pattern.footer
 
     let loop = 0
-    let flag = 'bcW'
     let head = header . bra
     let tail = ket . footer
-    while loop < l:count
-      if flag ==# 'bcW'
-        let head_start = searchpos(head, 'bcW', upper_line)
-        let head_end   = searchpos(head, 'ceW', lower_line)
-        call cursor(orig_pos)
-        let tail_start = searchpos(tail, 'bcW', upper_line)
-        let tail_end   = searchpos(tail, 'ceW', lower_line)
-"         PP! [orig_pos, head, head_start, head_end, tail, tail_start, tail_end]
-"         PP! [(tail_start != [0, 0]), (tail_end != [0, 0]), ((orig_pos[0] > tail_start[0]) || ((orig_pos[0] == tail_start[0]) && (orig_pos[1] >= tail_start[1]))), (((orig_pos[0] == tail_end[0]) || (orig_pos[1] <= tail_end[1])) && (orig_pos[0] < tail_end[0]))]
 
-        " start searching
-        " check the initial position
-        let bra_pos_list = []
-        if (head_start != [0, 0])
-        \  && (head_end != [0, 0])
-        \  && ((orig_pos[0] > head_start[0]) || ((orig_pos[0] == head_start[0]) && (orig_pos[1] >= head_start[1])))
-        \  && (((orig_pos[0] == head_end[0]) && (orig_pos[1] <= head_end[1])) || (orig_pos[0] < head_end[0]))
+    " start searching
+    if a:mode[0] ==# 'a'
+      " search for the first 'bra'
+      if searchpos(tail, 'cn', lower_line) == orig_pos
+        let bra_pos = searchpairpos(bra, '', ket, 'b', '', upper_line)
+      endif
+      let bra_pos = searchpairpos(bra, '', ket, 'b', '', upper_line)
+      let is_string_at_bra = s:is_string_literal(bra_pos)
+    elseif a:mode[0] ==# 'i'
+      let head_start = searchpos(head, 'bc', upper_line)
+      let head_end   = searchpos(head, 'ce', lower_line)
+      call cursor(orig_pos)
+      let tail_start = searchpos(tail, 'bc', upper_line)
+      let tail_end   = searchpos(tail, 'ce', lower_line)
 
-"           PP! [1, pattern]
-          " cursor is on a header
-          call cursor(head_end)
-        elseif (tail_start != [0, 0])
-        \  && (tail_end != [0, 0])
-        \  && ((orig_pos[0] > tail_start[0]) || ((orig_pos[0] == tail_start[0]) && (orig_pos[1] >= tail_start[1])))
-        \  && (((orig_pos[0] == tail_end[0]) && (orig_pos[1] <= tail_end[1])) || (orig_pos[0] < tail_end[0]))
-        \  && !s:is_string_literal(judge_syn, tail_end)
-
-"           PP! [2, pattern]
-          " cursor is on a footer
-          call cursor(tail_start)
-          if tail_start[1] != 1
-            normal! h
-          endif
-        else
-"           PP! [3, pattern]
-          call cursor(orig_pos)
+      " check the initial position
+      if s:is_in_the_range(orig_pos, head_start, head_end)
+        " cursor is on a header
+        call cursor(head_end)
+      elseif s:is_in_the_range(orig_pos, tail_start, tail_end)
+        " cursor is on a footer
+        call cursor(tail_start)
+        if tail_start[1] != 1
+          normal! h
         endif
+      else
+        " cursor is in between a bra and a ket
+        call cursor(orig_pos)
       endif
 
       " move to the corresponded 'bra'
-      let hoge = [line('.'), col('.'), bra, ket, flag]
-      let bra_pos = searchpairpos(bra, '', ket, flag, 's:is_string_literal(judge_syn, [line("."), col(".")])', upper_line)
-"       PP! [hoge, bra_pos]
+      let bra_pos = searchpairpos(bra, '', ket, 'bc', '', upper_line)
+      if bra_pos == s:null_pos | continue | endif
+      let is_string_at_bra = s:is_string_literal(bra_pos)
+    endif
 
-      if bra_pos == [0, 0]
-        " go to the next pattern
-"         PP! 'cannot find bra_pos, go_to_next_pattern'
-        break
-      endif
+    while loop < a:count
+      " 'bra' should accompany with 'header'
+      if searchpos(head, 'bcen', upper_line) == bra_pos
+        let head_pos = searchpos(head, 'bcn', upper_line)
 
-      let flag = 'bW'
-
-      if !s:is_string_literal(judge_syn, bra_pos)
-        " 'bra' should accompany with 'header'
-        if searchpos(head, 'bcenW', upper_line) == bra_pos
-          let head_pos = searchpos(head, 'bcnW', upper_line)
-"           PP! ['head_pos', head_pos]
-
-          " Start searching for the paired tail pattern.
-          " update the syntax information of head
-          let judge_syn = (!s:is_string_literal(((a:mode == 'i') ? 1 : 0), head_pos))
-
-          let go_to_next_pattern = 0
-          while 1
-            " search for the paired 'ket'
-            let ket_pos = searchpairpos(bra, '', ket, 'W', 's:is_string_literal(judge_syn, [line("."), col(".")])', lower_line)
-            if ket_pos == [0, 0]
-              " cannot found
-"               PP! 'cannot find ket_pos, go_to_next_pattern'
-              let go_to_next_pattern = 1
-              break
-            endif
-
-            let tail_pos = searchpos(tail, 'ceW', lower_line)
-"             PP! ['head_pos', head_pos, 'tail_pos', tail_pos]
-            if tail_pos == [0, 0]
-              let go_to_next_pattern = 1
-              break
-            elseif !s:is_string_literal(judge_syn, tail_pos) && (searchpos(tail, 'bcn', upper_line) == ket_pos)
-              " found the corresponded tail
-"               PP! ['successfully found!', 'head_pos', head_pos, 'tail_pos', tail_pos]
-              let candidates += [[head_pos, tail_pos, rank]]
-              let loop += 1
-              break
-            else
-              " The footer condition is not matched.
-              call cursor(ket_pos)
-              break
-            endif
-          endwhile
-
-          if go_to_next_pattern
+        " search for the paired 'ket'
+        let ket_pos = searchpairpos(bra, '', ket, '', 's:is_string_literal(getpos(".")[1:2]) != is_string_at_bra', lower_line)
+        if ket_pos != s:null_pos
+          let tail_pos = searchpos(tail, 'ce', lower_line)
+          if tail_pos == s:null_pos
             break
-          else
-            call cursor(bra_pos)
+          elseif searchpos(tail, 'bcn', upper_line) == ket_pos
+            " syntax check
+            if !is_string_at_bra || s:is_continuous_syntax(bra_pos, ket_pos)
+              " found the corresponded tail
+              let candidates += [[head_pos, bra_pos, ket_pos, tail_pos, rank]]
+              let loop += 1
+            endif
           endif
         endif
+        call cursor(bra_pos)
       endif
+
+      " move to the next 'bra'
+      let bra_pos = searchpairpos(bra, '', ket, 'b', '', upper_line)
+      if bra_pos == s:null_pos | break | endif
+      let is_string_at_bra = s:is_string_literal(bra_pos)
     endwhile
 
     call cursor(orig_pos)
   endfor
-
-  if candidates == []
-    return 0
-  else
-    let line_numbers = map(copy(candidates), 'v:val[0][0]') + map(copy(candidates), 'v:val[1][0]')
-    let top_line     = min(line_numbers)
-    let bottom_line  = max(line_numbers)
-
-    let sorted_candidates = s:sort_candidates(candidates, top_line, bottom_line)
-"     PP! sorted_candidates
-    if len(sorted_candidates) > l:count - 1
-      let [head_pos, tail_pos, dummy1, dummy2] = sorted_candidates[l:count - 1]
+  return candidates
+endfunction
+"}}}
+function! s:is_in_the_range(pos, head, tail) abort  "{{{
+  return (a:pos != s:null_pos) && (a:head != s:null_pos) && (a:tail != s:null_pos)
+    \  && ((a:pos[0] > a:head[0]) || ((a:pos[0] == a:head[0]) && (a:pos[1] >= a:head[1])))
+    \  && ((a:pos[0] < a:tail[0]) || ((a:pos[0] == a:tail[0]) && (a:pos[1] <= a:tail[1])))
+endfunction
+"}}}
+function! s:is_string_literal(pos) abort  "{{{
+  return match(map(synstack(a:pos[0], a:pos[1]), 'synIDattr(synIDtrans(v:val), "name")'), 'String') > -1
+endfunction
+"}}}
+function! s:is_continuous_syntax(bra_pos, ket_pos) abort  "{{{
+  let start_col = a:bra_pos[1]
+  for lnum in range(a:bra_pos[0], a:ket_pos[0])
+    if lnum == a:ket_pos[0]
+      let end_col= a:ket_pos[1]
     else
-      return 0
+      let end_col= col([lnum, '$'])
     endif
-
-    return ['v', [0] + head_pos + [0], [0] + tail_pos + [0]]
-  endif
+    for col in range(start_col, end_col)
+      if match(map(synstack(lnum, col), 'synIDattr(synIDtrans(v:val), "name")'), 'String') < 0
+        return 0
+      endif
+    endfor
+    let start_col = 1
+  endfor
+  return 1
 endfunction
 "}}}
-function! s:is_string_literal(flag, pos)  "{{{
-  if a:flag
-    return synIDattr(synIDtrans(synID(a:pos[0], a:pos[1], 1)), "name") =~# 'String'
-  else
-    return 0
-  endif
-endfunction
-"}}}
-function! s:user_conf(name, default)    "{{{
+function! s:user_conf(name, default) abort    "{{{
   let user_conf = a:default
 
   if exists('g:textobj_functioncall_' . a:name)
@@ -254,64 +252,25 @@ function! s:user_conf(name, default)    "{{{
   return user_conf
 endfunction
 "}}}
-function! s:resolve_patterns(opt_no_default_patterns)  "{{{
-  if a:opt_no_default_patterns
-    let patterns_dict = get(g:, 'textobj_functioncall_patterns', {})
-    let filetype      = has_key(patterns_dict, &filetype) ? &filetype : '_'
-    let patterns      = get(patterns_dict, filetype, {})
-  else
-    let user_patterns = get(g:, 'textobj_functioncall_patterns', {})
-    let has_filetype_key_default = has_key(s:functioncall_patterns, &filetype)
-    let has_filetype_key_user    = has_key(user_patterns, &filetype)
-
-    if has_filetype_key_default && has_filetype_key_user
-      let user_filetype_patterns    = user_patterns[&filetype]
-      let default_filetype_patterns = s:functioncall_patterns[&filetype]
-
-      if (type(user_filetype_patterns) == s:type_dict) && (type(default_filetype_patterns) == s:type_dict)
-        let patterns = [user_filetype_patterns] + [default_filetype_patterns]
-      elseif (type(user_filetype_patterns) == s:type_dict)
-        let patterns = [user_filetype_patterns] + default_filetype_patterns
-      elseif (type(default_filetype_patterns) == s:type_dict)
-        let patterns = user_filetype_patterns + [default_filetype_patterns]
-      else
-        let patterns = user_filetype_patterns + default_filetype_patterns
-      endif
-    elseif has_filetype_key_user
-      let patterns = user_patterns[&filetype]
-    elseif has_filetype_key_default
-      let patterns = s:functioncall_patterns[&filetype]
-    else
-      let user_filetype_patterns    = get(user_patterns, '_', [])
-      let default_filetype_patterns = s:functioncall_patterns['_']
-
-      if (type(user_filetype_patterns) == s:type_dict) && (type(default_filetype_patterns) == s:type_dict)
-        let patterns = [user_filetype_patterns] + [default_filetype_patterns]
-      elseif (type(user_filetype_patterns) == s:type_dict)
-        let patterns = [user_filetype_patterns] + default_filetype_patterns
-      elseif (type(default_filetype_patterns) == s:type_dict)
-        let patterns = user_filetype_patterns + [default_filetype_patterns]
-      else
-        let patterns = user_filetype_patterns + default_filetype_patterns
-      endif
+function! s:resolve_patterns() abort  "{{{
+  if exists('g:textobj_functioncall_patterns')
+    let pattern_dict = g:textobj_functioncall_patterns
+    if has_key(pattern_dict, &filetype)
+      return pattern_dict[&filetype]
+    elseif has_key(pattern_dict, '_')
+      return pattern_dict['_']
     endif
   endif
 
-  if (type(patterns) == s:type_dict) && (patterns != {})
-    return [[patterns['header'], patterns['bra'], patterns['ket'], patterns['footer']]]
-  elseif type(patterns) == s:type_list && (patterns != [])
-    let pattern_list = []
-    for pattern in patterns
-      let pattern_list += [[pattern['header'], pattern['bra'], pattern['ket'], pattern['footer']]]
-    endfor
-
-    return pattern_list
+  let pattern_dict = s:patterns
+  if has_key(pattern_dict, &filetype)
+    return pattern_dict[&filetype]
   else
-    return []
+    return pattern_dict['_']
   endif
 endfunction
 "}}}
-function! s:sort_candidates(candidates, top_line, bottom_line)  "{{{
+function! s:sort_candidates(candidates, top_line, bottom_line) abort  "{{{
   let length_list = map(getline(a:top_line, a:bottom_line), 'len(v:val) + 1')
 
   let idx = 0
@@ -323,20 +282,80 @@ function! s:sort_candidates(candidates, top_line, bottom_line)  "{{{
     let idx += 1
   endfor
 
-  " candidates == [[head_pos], [tail_pos], rank, distance]
-  let candidates = map(copy(a:candidates), '[v:val[0], v:val[1], v:val[2], ((accummed_list[v:val[1][0] - a:top_line] - v:val[0][1] + 1) + v:val[1][1])]')
+  " candidates == [[head_pos], [bra_pos], [head_pos], [tail_pos], rank, distance]
+  let candidates = map(copy(a:candidates), '[v:val[0], v:val[1], v:val[2], v:val[3], v:val[4], ((accummed_list[v:val[3][0] - a:top_line] - v:val[0][1] + 1) + v:val[3][1])]')
 
   return sort(candidates, 's:compare')
 endfunction
 "}}}
-function! s:compare(i1, i2) "{{{
-  if a:i1[3] < a:i2[3]
+function! s:compare(i1, i2) abort "{{{
+  if a:i1[5] < a:i2[5]
     return -1
-  elseif a:i1[3] > a:i2[3]
+  elseif a:i1[5] > a:i2[5]
     return 1
   else
-    return a:i2[2] - a:i1[2]
+    return a:i2[4] - a:i1[4]
   endif
+endfunction
+"}}}
+
+" utilities
+function! s:create_key(filetype) abort  "{{{
+  if !exists('g:textobj_functioncall_patterns')
+    let g:textobj_functioncall_patterns = deepcopy(s:patterns)
+  endif
+  if !has_key(g:textobj_functioncall_patterns, a:filetype)
+    if has_key(g:textobj_functioncall_patterns, '_')
+      let g:textobj_functioncall_patterns[a:filetype] = deepcopy(g:textobj_functioncall_patterns['_'])
+    else
+      if has_key(s:patterns, a:filetype)
+        let g:textobj_functioncall_patterns[a:filetype] = deepcopy(s:patterns[a:filetype])
+      else
+        let g:textobj_functioncall_patterns[a:filetype] = deepcopy(s:patterns['_'])
+      endif
+    endif
+  endif
+endfunction
+"}}}
+function! textobj#functioncall#add(header, bra, ket, footer, ...) abort "{{{
+  if a:bra ==# ''
+    echoerr 'textobj-functincall:textobj#functioncall#add: The second argument cannot be empty.'
+    return
+  elseif a:ket ==# ''
+    echoerr 'textobj-functincall:textobj#functioncall#add: The third argument cannot be empty.'
+    return
+  endif
+
+  let filetype = a:0 > 0 ? a:1
+             \ : &filetype != '' ? &filetype
+             \ : '_'
+  call s:create_key(filetype)
+
+  let g:textobj_functioncall_patterns[filetype] += [{
+        \ 'header': a:header,
+        \ 'bra'   : a:bra,
+        \ 'ket'   : a:ket,
+        \ 'footer': a:footer,
+        \ }]
+endfunction
+"}}}
+function! textobj#functioncall#clear(...) abort "{{{
+  let filetype = a:0 > 0 ? a:1
+             \ : &filetype != '' ? &filetype
+             \ : '_'
+  call create_key(filetype)
+  let g:textobj_functioncall_patterns[filetype] = []
+endfunction
+"}}}
+function! textobj#functioncall#include(target, ...) abort "{{{
+  let dest = a:0 > 0 ? a:1
+         \ : &filetype != '' ? &filetype
+         \ : '_'
+  let included = has_key(g:textobj_functioncall_patterns, a:target)
+             \ ? deepcopy(g:textobj_functioncall_patterns[a:target])
+             \ : []
+  call s:create_key(dest)
+  let g:textobj_functioncall_patterns[dest] += included
 endfunction
 "}}}
 

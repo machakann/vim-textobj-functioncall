@@ -1,5 +1,5 @@
 " Vim global plugin to define text-object for function call.
-" Last Change: 05-Jul-2014.
+" Last Change: 01-Mar-2015.
 " Maintainer : Masaaki Nakamura <mckn@outlook.com>
 
 " License    : NYSL
@@ -17,6 +17,12 @@ call textobj#user#plugin('functioncall', {
       \     'select-a': 'af',
       \     'select-i-function': 'textobj#functioncall#i',
       \     'select-i': 'if',
+      \   },
+      \   'innerparen': {
+      \     'select-a-function': 'textobj#functioncall#ap',
+      \     'select-a': '',
+      \     'select-i-function': 'textobj#functioncall#ip',
+      \     'select-i': '',
       \   },
       \ })
 

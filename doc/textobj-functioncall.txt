@@ -1,0 +1,225 @@
+*textobj-functioncall.txt*			Last change:11-Mar-2015.
+
+The textobject plugin to select a region that calls function.
+
+
+Author  : machakann <mckn@outlook.jp>
+License : NYSL license
+          Japanese <http://www.kmonos.net/nysl/>
+          English (Unofficial) <http://www.kmonos.net/nysl/index.en.html>
+
+Requirements:
+- Vim 7.2 or later
+- |textobj-user| 0.3.8 or later (vimscript#2100)
+
+==============================================================================
+CONTENTS				*textobj-functioncall-contents*
+
+INTRODUCTION		|textobj-functioncall-introduction|
+KEYMAPPINGS		|textobj-functioncall-keymappings|
+CONFIGURATION		|textobj-functioncall-configuration|
+
+==============================================================================
+INTRODUCTION				*textobj-functioncall-introduction*
+
+*textobj-functioncall* is a Vim plugin to implement textobjects to select a
+region that calls function in your source code. Needless to say, Function is a
+essential element for many programming languages. This plugin gives powerful
+ways to edit them. For example, think about a line like:
+>
+	call func(argument)
+<
+If the cursor is on the string "func(argument)", the keymappings which is
+given by this plugin select it. Additionally optional keymappings could gives
+a way to select only argument in the same situation.
+
+There are two main keymappings, |<Plug>(textobj-functioncall-i)| and
+|<Plug>(textobj-functioncall-a)|. Both of them select a region like
+"func(argument)", but they search for the region in different way. The
+difference would appear when a function takes another function as its
+argument.
+|<Plug>(textobj-functioncall-i)| considers that the cursor is on somewhere in
+the region looking for. Thus it selects the most inner part of matched
+regions, "func2(argument)" for the following example.
+>
+	             #              : cursor
+	call func1(func2(argument))
+	           |<----------->|  : selected region
+<
+|<Plug>(textobj-functioncall-a)| considers that the cursor is in between
+parenthesis of the region looking for. Thus it selects the first region to
+include the position of the cursor, so it searches somewhat outer region like
+"func1(func2(argument))" for the example.
+>
+	             #              : cursor
+	call func1(func2(argument))
+	     |<------------------>| : selected region
+<
+If any candidate is found, it falls back to the function of
+|<Plug>(textobj-functioncall-i)|.
+
+------------------------------------------------------------------------------
+This plugin also serves optional keymappings,
+|<Plug>(textobj-functioncall-innerparen-i)| and
+|<Plug>(textobj-functioncall-innerparen-a)|. They behaves similar as the above
+two. But they selects only inside the parenthesis.
+>
+	             #              : cursor
+	call func1(func2(argument))
+	                 |<---->|   :<Plug>(textobj-functioncall-innerparen-i)
+	           |<----------->|  :<Plug>(textobj-functioncall-innerparen-a)
+<
+
+------------------------------------------------------------------------------
+In fact, these keymappings response the similar expressions also in default.
+>
+	array[index]
+<
+If you want to change the behavior, please see
+|textobj-functioncall-configuration|.
+
+==============================================================================
+KEYMAPPINGS				*textobj-functioncall-keymappings*
+
+This plugin serves following keymappings.
+
+kind          keymappings                                 default keymappings
+--------------------------------------------------------------------------
+ i            |<Plug>(textobj-functioncall-i)|            if
+ a            |<Plug>(textobj-functioncall-a)|            af
+innerparen-i  |<Plug>(textobj-functioncall-innerparen-i)|
+innerparen-a  |<Plug>(textobj-functioncall-innerparen-a)|
+--------------------------------------------------------------------------
+
+If you do not need default keymappings, define a variable named
+|g:textobj_functioncall_no_default_key_mappings| in your vimrc.
+>
+        let g:textobj_functioncall_no_default_key_mappings = 1
+<
+Then default mappings are never applied. And map them again as you like.
+>
+        xmap if <Plug>(textobj-functioncall-innerparen-i)
+        omap if <Plug>(textobj-functioncall-innerparen-i)
+        xmap af <Plug>(textobj-functioncall-innerparen-a)
+        omap af <Plug>(textobj-functioncall-innerparen-a)
+<
+
+------------------------------------------------------------------------------
+keymappings~
+<Plug>(textobj-functioncall-i)		*<Plug>(textobj-functioncall-i)*
+	This keymapping selects a function-call-like region. It searches the
+	most inner region under the cursor.
+
+<Plug>(textobj-functioncall-a)		*<Plug>(textobj-functioncall-a)*
+	This keymapping selects a function-call-like region. It searches the
+	function-call-like region which include the cursor by its parenthesis.
+	If any candidate is found, it falls back to the function of
+	|<Plug>(textobj-functioncall-i)|.
+
+				*<Plug>(textobj-functioncall-innerparen-i)*
+<Plug>(textobj-functioncall-innerparen-i)
+	This keymapping selects a argument part of function-call-like region.
+	It searches in the same way with |<Plug>(textobj-functioncall-i)|.
+
+				*<Plug>(textobj-functioncall-innerparen-a)*
+<Plug>(textobj-functioncall-innerparen-a)
+	This keymapping selects a argument part of function-call-like region.
+	It searches in the same way with |<Plug>(textobj-functioncall-a)|.
+
+==============================================================================
+CONFIGURATION				*textobj-functioncall-configuration*
+
+Valiables~
+			*g:textobj_functioncall_no_default_key_mappings*
+g:textobj_functioncall_no_default_key_mappings
+	If you define this valiable in your vimrc, default keymappings would
+	not be defined.
+
+g:textobj_functioncall_search_lines	*g:textobj_functioncall_search_lines*
+	The number of lines to search the function-call-like region. If a
+	positive number is assigned, the textobject searches the candidate
+	in the range before and ahead the number of lines from the current
+	line. If zero or a negative number is assigned, the textobject
+	searches the whole part of the current buffer. But it might be slow
+	when you edit a large file. The default value is 30.
+
+g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
+	This is the dictionary which have lists of patterns to define
+	function-call-like region for each filetype. Its keys are the name of
+	filetypes and the value are the list of patterns. If there is no key
+	matched with the current filetype, then the key '_' would be used. If
+	|g:textobj_functioncall_patterns| does not exist, the textobjects use
+	intrinsic patterns. The equivalent of intrinsic pattern is like this.
+>
+	let g:textobj_functioncall_patterns = {}
+	let g:textobj_functioncall_patterns['_'] = [
+		\   {
+		\     'header' : '\<\h\k*',
+		\     'bra'    : '(',
+		\     'ket'    : ')',
+		\     'footer' : '',
+		\   },
+		\   {
+		\     'header' : '\<\h\k*',
+		\     'bra'    : '\[',
+		\     'ket'    : '\]',
+		\     'footer' : '',
+		\   },
+		\ ]
+	let g:textobj_functioncall_patterns['vim'] = [
+		\   {
+		\     'header' : '\<\%(s:\)\?\k*',
+		\     'bra'    : '(',
+		\     'ket'    : ')',
+		\     'footer' : '',
+		\   },
+		\   {
+		\     'header' : '\%(^\|[^:]\)\zs\<\%([abglstvw]:\)\?\h\k*',
+		\     'bra'    : '\[',
+		\     'ket'    : '\]',
+		\     'footer' : '',
+		\   },
+		\ ]
+<
+	An element of the pattern list is a dictionary which has the keys
+	named header, bra, ket, footer. Each value is a regular expression
+	pattern matched with the name of function, the left-side of
+	parenthesis, the right-side of parenthesis, following part after the
+	right-side of parenthesis if needed.
+
+
+Functions~
+					*textobj#functioncall#add()*
+textobj#functioncall#add(header, bra, ket, footer [, filetype])
+	Add the new pattern safely. If you do not assigned "filetype", this
+	function add the new pattern to the current filetype. Thus it should
+	be explicitly assigned when you call this function in your vimrc. If
+	there is no key matched with "filetype", this function includes the
+	pattern list of '_' key or the intrinsic pattern first and then add
+	your pattern. If you do not want, call |textobj#functioncall#clear()|
+	first.
+>
+		call textobj#functioncall#add('\<\h\k*', '(', ')', ';', 'c')
+<
+
+					*textobj#functioncall#clear()*
+textobj#functioncall#clear([filetype])
+	Clear the pattern list. If you do not assigned "filetype", this
+	function clear the pattern list of the current filetype. Thus it
+	should be explicitly assigned when you call this function in your
+	vimrc.
+>
+		call textobj#functioncall#clear('vim')
+<
+
+					*textobj#functioncall#include()*
+textobj#functioncall#include(target [, filetype])
+	Include the "target" pattern list to "filetype" pattern list. If you
+	do not assigned "filetype", this function include the "target" pattern
+	to the current filetype. Thus it should be explicitly assigned when
+	you call this function in your vimrc.
+>
+		call textobj#functioncall#include('c', 'cpp')
+<
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:

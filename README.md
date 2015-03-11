@@ -5,19 +5,19 @@ The vim textobject plugin to treat function-call regions.
 
 Default mappings are assigned to `if` and `af`.
 
-* `if` and `af` behave differently when the cursor is on a string literal.
-* `if` can also recognize function calls inside the string literal.
-* `af` always ignore the string literal region.
-* `if` might not be always correct...
+* `if` and `af`, both of them select a region like `func(argument)`.
+* `if` and `af` behave differently when a function takes another function as its argument.
+* `if` selects the most inner function under the cursor.
+* `af` selects the first function including the cursor position by its parenthesis. However if any candidate would be found, it falls back to `if`.
 
 
 ```vim
-                                  #              : cursor position
-call map(['1', '3', '2'], 's:sugoi_func(v:val)')
+             #              : cursor position
+call func1(func2(argument))
 
-                           |<-------if------>|
-call map(['1', '3', '2'], 's:sugoi_func(v:val)')
-     |<------------------af------------------->|
+           |<-----if---->|
+call func1(func2(argument))
+     |<--------af-------->|
 ```
 
 ---
@@ -38,13 +38,7 @@ omap aF <Plug>(textobj-functioncall-a)
 ---
 
 This textobject could select following patterns.
-* `foo()`
-* `bar[]`
-* `baz{}`
+* `func(argument)`
+* `array[index]`
 
 ---
-
-お探しのものはこちらかもしれません
-
-→あにゃログ - textobj-xbrackets.vim
-http://www.sopht.jp/blog/index.php?/archives/449-textobj-xbrackets.vim.html

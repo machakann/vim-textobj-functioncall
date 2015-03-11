@@ -1,0 +1,217 @@
+*textobj-functioncall.txt*	日本語版ヘルプ	Last change:11-Mar-2015.
+
+関数を呼んでるっぽい箇所を選択するテキストオブジェクトです。
+
+
+書いた人   : machakann <mckn@outlook.jp>
+ライセンス : NYSL license
+          Japanese <http://www.kmonos.net/nysl/>
+          English (Unofficial) <http://www.kmonos.net/nysl/index.en.html>
+
+必須要件:
+- Vim 7.2 or later
+- |textobj-user| 0.3.8 or later (vimscript#2100)
+
+==============================================================================
+CONTENTS				*textobj-functioncall-contents*
+
+INTRODUCTION		|textobj-functioncall-introduction|
+KEYMAPPINGS		|textobj-functioncall-keymappings|
+CONFIGURATION		|textobj-functioncall-configuration|
+
+==============================================================================
+*textobj-functioncall* はソースコード中の関数呼び出しっぽい部分を選択するため
+のテキストオブジェクトプラグインです。言うまでもないことですが、関数は多くの言
+語において重要な構成要素となっています。このプラグインはこの関数呼び出し部分を
+編集するうえで強力な手段を提供します。例えば次のような行について考えてみましょ
+う。
+>
+	call func(argument)
+<
+カーソルが "func(argument)" の中のどこかにある場合、このプラグインの提供する
+キーマッピングはそれ全体を対象に選択します。さらに必要であれば "argument" 部分
+のみを選択するキーマッピングも設定可能です。
+
+まず二つの主要なキーマッピング |<Plug>(textobj-functioncall-i)| 及び
+|<Plug>(textobj-functioncall-a)| はどちらも "func(argument)" のような関数呼び
+出し全体を選択します。ただし、関数がその引数として別の関数を取る場合に挙動が少
+し異なります。
+|<Plug>(textobj-functioncall-i)| は常にカーソルが関数呼び出し部分のどこかにあ
+るものと考え、そのうち最も内側の部分を選択します。なので下の例では
+"func2(argument)" を選択するでしょう。
+>
+	             #              : cursor
+	call func1(func2(argument))
+	           |<----------->|  : selected region
+<
+|<Plug>(textobj-functioncall-a)| は関数呼び出しの括弧の中のどこかにカーソルが
+あるものとして考えます。なのでカーソル位置を包含する最初の関数呼び出し部分を探
+して選択します。先の例であれば、 "func1(func2(argument))" を選択することになり
+ます。
+>
+	             #              : cursor
+	call func1(func2(argument))
+	     |<------------------>| : selected region
+<
+ただし、もしこの方法で探して対象部分が見つからなければ
+|<Plug>(textobj-functioncall-i)| の方法へ回帰します。
+
+------------------------------------------------------------------------------
+必要であれば |<Plug>(textobj-functioncall-innerparen-i)| および、
+|<Plug>(textobj-functioncall-innerparen-a)| もご使用になれます。これらは先述の
+主要なキーマッピングと同じように対象を探しますが、括弧内の引数部分のみを選択し
+ます。
+>
+	             #              : cursor
+	call func1(func2(argument))
+	                 |<---->|   :<Plug>(textobj-functioncall-innerparen-i)
+	           |<----------->|  :<Plug>(textobj-functioncall-innerparen-a)
+<
+
+------------------------------------------------------------------------------
+実のところ、これらのキーマッピングは便利のために次のような似たパターンにも反応
+します。
+>
+	array[index]
+<
+もしこれらの挙動を変更したい場合、 |textobj-functioncall-configuration| をご参
+照ください。
+==============================================================================
+KEYMAPPINGS				*textobj-functioncall-keymappings*
+
+このプラグインは次に掲げるキーマッピングを提供します。
+
+種別          キーマッピング                              デフォルト設定
+--------------------------------------------------------------------------
+ i            |<Plug>(textobj-functioncall-i)|            if
+ a            |<Plug>(textobj-functioncall-a)|            af
+innerparen-i  |<Plug>(textobj-functioncall-innerparen-i)|
+innerparen-a  |<Plug>(textobj-functioncall-innerparen-a)|
+--------------------------------------------------------------------------
+
+もし、デフォルト設定が必要なければあなたの vimrc で変数
+|g:textobj_functioncall_no_default_key_mappings| を定義しておいてください。
+>
+        let g:textobj_functioncall_no_default_key_mappings = 1
+<
+こうすることでデフォルトのマッピングは設定されません。お好きなキーへ設定しなお
+してください。
+>
+        xmap if <Plug>(textobj-functioncall-innerparen-i)
+        omap if <Plug>(textobj-functioncall-innerparen-i)
+        xmap af <Plug>(textobj-functioncall-innerparen-a)
+        omap af <Plug>(textobj-functioncall-innerparen-a)
+<
+
+------------------------------------------------------------------------------
+keymappings~
+<Plug>(textobj-functioncall-i)		*<Plug>(textobj-functioncall-i)*
+	関数呼び出し様の部分を選択します。カーソル下の最も内側の対象を選択しま
+	す。
+
+<Plug>(textobj-functioncall-a)		*<Plug>(textobj-functioncall-a)*
+	関数呼び出し様の部分を選択します。カーソルを括弧により包含する最初の対
+	象を選択します。ただし該当がない場合は
+	|<Plug>(textobj-functioncall-i)| へ回帰します。
+
+				*<Plug>(textobj-functioncall-innerparen-i)*
+<Plug>(textobj-functioncall-innerparen-i)
+	関数呼び出し様の部分の括弧内のみを選択します。対象は
+	|<Plug>(textobj-functioncall-i)| と同様の方法により検索します。
+
+				*<Plug>(textobj-functioncall-innerparen-a)*
+<Plug>(textobj-functioncall-innerparen-a)
+	関数呼び出し様の部分の括弧内のみを選択します。対象は
+	|<Plug>(textobj-functioncall-a)| と同様の方法により検索します。
+
+==============================================================================
+CONFIGURATION				*textobj-functioncall-configuration*
+
+Valiables~
+			*g:textobj_functioncall_no_default_key_mappings*
+g:textobj_functioncall_no_default_key_mappings
+	この変数を vimrc で定義するとデフォルトのマッピングが提供されません。
+
+g:textobj_functioncall_search_lines	*g:textobj_functioncall_search_lines*
+	カーソル位置より何行ほど対象の検索範囲に含めるかを指定します。正の数を
+	指定するとカーソル位置よりその行数を検索範囲とします。ゼロおよび負数を
+	指定すると常にファイルの先頭あるいは末尾までを検索範囲としますが、大き
+	なファイルで動作が遅くなるかもしれません。デフォルト値は30です。
+
+g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
+	関数呼び出し様の部分の定義パターンリストをファイルタイプごとに保持した
+	辞書変数です。辞書変数のキー名がファイルタイプ名に相当し、その値にリス
+	トとして定義パターンが保持されます。編集中のファイルタイプに一致する
+	キーが存在しない場合、汎用のキー '_' が使用されます。もし、
+	|g:textobj_functioncall_patterns| が存在しない場合は内部的に保持したサ
+	ンプルパターンが使用されます。この内部パターンと等価となる設定は次のよ
+	うに書けます。
+>
+	let g:textobj_functioncall_patterns = {}
+	let g:textobj_functioncall_patterns['_'] = [
+		\   {
+		\     'header' : '\<\h\k*',
+		\     'bra'    : '(',
+		\     'ket'    : ')',
+		\     'footer' : '',
+		\   },
+		\   {
+		\     'header' : '\<\h\k*',
+		\     'bra'    : '\[',
+		\     'ket'    : '\]',
+		\     'footer' : '',
+		\   },
+		\ ]
+	let g:textobj_functioncall_patterns['vim'] = [
+		\   {
+		\     'header' : '\<\%(s:\)\?\k*',
+		\     'bra'    : '(',
+		\     'ket'    : ')',
+		\     'footer' : '',
+		\   },
+		\   {
+		\     'header' : '\%(^\|[^:]\)\zs\<\%([abglstvw]:\)\?\h\k*',
+		\     'bra'    : '\[',
+		\     'ket'    : '\]',
+		\     'footer' : '',
+		\   },
+		\ ]
+<
+	リストの一つ一つの要素は header, bra, ket, footer の四つのキーを持つ辞
+	書です。それぞれのキーは関数名、左括弧、右括弧、右括弧に続く部分にマッ
+	チする正規表現となります。
+
+
+Functions~
+					*textobj#functioncall#add()*
+textobj#functioncall#add(header, bra, ket, footer [, filetype])
+	新しい定義パターンを適切に追加します。もし第五引数の "filetype" が指定
+	されなければ現在編集中のファイルタイプへ設定されます。なので、 vimrc
+	へ記述する場合は必ず指定してください。 "filetype" にマッチするキーがま
+	だ存在していなかった場合、'_' キーのリストか内部パターンのリストを
+	"filetype" へ追加したのちに新しいパターンを追加します。もし、必要なけ
+	れば、先に |textobj#functioncall#clear()| を実行してください。
+>
+		call textobj#functioncall#add('\<\h\k*', '(', ')', ';', 'c')
+<
+
+					*textobj#functioncall#clear()*
+textobj#functioncall#clear([filetype])
+	定義パターンのリストを空にします。もし "filetype" が指定されなければ編
+	集中のファイルタイプのリストを空にします。なので、 vimrcへ記述する場合
+	は必ず指定してください。
+>
+		call textobj#functioncall#clear('vim')
+<
+
+					*textobj#functioncall#include()*
+textobj#functioncall#include(target [, filetype])
+	第一引数 "target" に指定されたファイルタイプのパターンリストを第二引数
+	"filetype" に指定されたファイルタイプのリストへ組み込みます。第二引数
+	を省略すれば編集中のファイルタイプのリストへ組み込みますが、 vimrc へ
+	記述する場合は必ず指定してください。
+>
+		call textobj#functioncall#include('c', 'cpp')
+<
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:
