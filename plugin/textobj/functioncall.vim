@@ -1,5 +1,5 @@
 " Vim global plugin to define text-object for function call.
-" Last Change: 01-Mar-2015.
+" Last Change: 03-Apr-2015.
 " Maintainer : Masaaki Nakamura <mckn@outlook.com>
 
 " License    : NYSL
@@ -11,18 +11,25 @@ if exists("g:loaded_textobj_functioncall")
 endif
 let g:loaded_textobj_functioncall = 1
 
-call textobj#user#plugin('functioncall', {
-      \   '-': {
-      \     'select-a-function': 'textobj#functioncall#a',
-      \     'select-a': 'af',
-      \     'select-i-function': 'textobj#functioncall#i',
-      \     'select-i': 'if',
-      \   },
-      \   'innerparen': {
-      \     'select-a-function': 'textobj#functioncall#ap',
-      \     'select-a': '',
-      \     'select-i-function': 'textobj#functioncall#ip',
-      \     'select-i': '',
-      \   },
-      \ })
+onoremap <silent> <Plug>(textobj-functioncall-i)  :<C-u>call textobj#functioncall#i()<CR>
+xnoremap <silent> <Plug>(textobj-functioncall-i)  :<C-u>call textobj#functioncall#i()<CR>
+onoremap <silent> <Plug>(textobj-functioncall-a)  :<C-u>call textobj#functioncall#a()<CR>
+xnoremap <silent> <Plug>(textobj-functioncall-a)  :<C-u>call textobj#functioncall#a()<CR>
+onoremap <silent> <Plug>(textobj-functioncall-innerparen-i) :<C-u>call textobj#functioncall#ip()<CR>
+xnoremap <silent> <Plug>(textobj-functioncall-innerparen-i) :<C-u>call textobj#functioncall#ip()<CR>
+onoremap <silent> <Plug>(textobj-functioncall-innerparen-a) :<C-u>call textobj#functioncall#ap()<CR>
+xnoremap <silent> <Plug>(textobj-functioncall-innerparen-a) :<C-u>call textobj#functioncall#ap()<CR>
 
+""" default keymappings
+" If g:textobj_delimited_no_default_key_mappings has been defined, then quit immediately.
+if exists('g:textobj_functioncall_no_default_key_mappings') | finish | endif
+
+if !hasmapto('<Plug>(textobj-functioncall-i)')
+  silent! omap <unique> if <Plug>(textobj-functioncall-i)
+  silent! xmap <unique> if <Plug>(textobj-functioncall-i)
+endif
+
+if !hasmapto('<Plug>(textobj-functioncall-a)')
+  silent! omap <unique> af <Plug>(textobj-functioncall-a)
+  silent! xmap <unique> af <Plug>(textobj-functioncall-a)
+endif

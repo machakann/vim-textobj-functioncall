@@ -1,4 +1,4 @@
-*textobj-functioncall.txt*	日本語版ヘルプ	Last change:11-Mar-2015.
+*textobj-functioncall.txt*	日本語版ヘルプ	Last change:03-Apr-2015.
 
 関数を呼んでるっぽい箇所を選択するテキストオブジェクトです。
 
@@ -10,7 +10,6 @@
 
 必須要件:
 - Vim 7.2 or later
-- |textobj-user| 0.3.8 or later (vimscript#2100)
 
 ==============================================================================
 CONTENTS				*textobj-functioncall-contents*

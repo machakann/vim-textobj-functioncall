@@ -74,34 +74,50 @@ function! s:base_model(mode) abort  "{{{
     if a:mode[0] ==# 'a' && candidates == []
       let candidates = s:gather_candidates('i', l:count, pattern_list, opt)
     endif
+
+    let head = copy(s:null_pos)
+    let tail = copy(s:null_pos)
+    if candidates != []
+      let line_numbers = map(copy(candidates), 'v:val[0][0]') + map(copy(candidates), 'v:val[3][0]')
+      let top_line     = min(line_numbers)
+      let bottom_line  = max(line_numbers)
+
+      let sorted_candidates = s:sort_candidates(candidates, top_line, bottom_line)
+      if len(sorted_candidates) > l:count - 1
+        let [head_pos, bra_pos, ket_pos, tail_pos, _, _] = sorted_candidates[l:count - 1]
+        if a:mode[1] ==# 'p'
+          if !(bra_pos == ket_pos || (bra_pos[0] == ket_pos[0] && bra_pos[1]+1 == ket_pos[1]-1))
+            let [head, tail] = s:get_narrower_region(bra_pos, ket_pos)
+          endif
+        else
+          let head = head_pos
+          let tail = tail_pos
+        endif
+      endif
+    endif
   finally
     call winrestview(view)
   endtry
 
-  if candidates == []
-    return 0
-  else
-    let line_numbers = map(copy(candidates), 'v:val[0][0]') + map(copy(candidates), 'v:val[3][0]')
-    let top_line     = min(line_numbers)
-    let bottom_line  = max(line_numbers)
+  if head != s:null_pos && tail != s:null_pos
+    " select textobject
+    call cursor(head)
 
-    let sorted_candidates = s:sort_candidates(candidates, top_line, bottom_line)
-    if len(sorted_candidates) > l:count - 1
-      let [head_pos, bra_pos, ket_pos, tail_pos, _, _] = sorted_candidates[l:count - 1]
+    if a:mode == "\<C-v>"
+      execute "normal! \<C-v>"
     else
-      return 0
+      normal! v
     endif
 
-    if a:mode[1] ==# 'p'
-      if bra_pos == ket_pos || (bra_pos[0] == ket_pos[0] && bra_pos[1]+1 == ket_pos[1]-1)
-        return 0
-      else
-        return ['v', [0, bra_pos[0], bra_pos[1]+1, 0], [0, ket_pos[0], ket_pos[1]-1, 0]]
-      endif
-    else
-      return ['v', [0] + head_pos + [0], [0] + tail_pos + [0]]
+    call cursor(tail)
+
+    " counter measure for the 'selection' option being 'exclusive'
+    if &selection == 'exclusive'
+      normal! l
     endif
   endif
+
+  return
 endfunction
 "}}}
 function! s:gather_candidates(mode, count, pattern_list, opt) abort  "{{{
@@ -253,21 +269,28 @@ function! s:user_conf(name, default) abort    "{{{
 endfunction
 "}}}
 function! s:resolve_patterns() abort  "{{{
-  if exists('g:textobj_functioncall_patterns')
-    let pattern_dict = g:textobj_functioncall_patterns
-    if has_key(pattern_dict, &filetype)
-      return pattern_dict[&filetype]
-    elseif has_key(pattern_dict, '_')
-      return pattern_dict['_']
-    endif
-  endif
-
-  let pattern_dict = s:patterns
+  let pattern_dict = get(g:, 'textobj_functioncall_patterns', s:patterns)
   if has_key(pattern_dict, &filetype)
     return pattern_dict[&filetype]
   else
     return pattern_dict['_']
   endif
+endfunction
+"}}}
+function! s:get_narrower_region(head_edge, tail_edge) abort "{{{
+  let whichwrap  = &whichwrap
+  let &whichwrap = 'h,l'
+  try
+    call cursor(a:head_edge)
+    normal! l
+    let head = getpos('.')[1:2]
+    call cursor(a:tail_edge)
+    normal! h
+    let tail = getpos('.')[1:2]
+  finally
+    let &whichwrap = whichwrap
+  endtry
+  return [head, tail]
 endfunction
 "}}}
 function! s:sort_candidates(candidates, top_line, bottom_line) abort  "{{{
