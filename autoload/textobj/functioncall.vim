@@ -101,19 +101,23 @@ function! s:base_model(mode) abort  "{{{
 
   if head != s:null_pos && tail != s:null_pos
     " select textobject
-    call cursor(head)
-
     if a:mode == "\<C-v>"
       execute "normal! \<C-v>"
     else
       normal! v
     endif
 
+    call cursor(head)
+    normal! o
     call cursor(tail)
 
     " counter measure for the 'selection' option being 'exclusive'
     if &selection == 'exclusive'
       normal! l
+    endif
+  else
+    if a:mode ==# 'x'
+      normal! gv
     endif
   endif
 
