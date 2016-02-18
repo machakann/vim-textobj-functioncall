@@ -29,7 +29,7 @@ let s:patterns['_'] = [
 
 let s:patterns['vim'] = [
       \   {
-      \     'header' : '\<\%(s:\)\?\k*',
+      \     'header' : '\C\<\%(s:\h\|\%(g:\)\?[A-Z]\)\k*',
       \     'bra'    : '(',
       \     'ket'    : ')',
       \     'footer' : '',
