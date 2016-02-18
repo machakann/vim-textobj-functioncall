@@ -42,6 +42,22 @@ let s:patterns['vim'] = [
       \   },
       \ ]
 
+" To include multibyte characters
+let s:patterns['julia'] = [
+      \   {
+      \     'header' : '\%#=2\<[[:upper:][:lower:]_]\k*',
+      \     'bra'    : '(',
+      \     'ket'    : ')',
+      \     'footer' : '',
+      \   },
+      \   {
+      \     'header' : '\%#=2\<[[:upper:][:lower:]_]\k*',
+      \     'bra'    : '\[',
+      \     'ket'    : '\]',
+      \     'footer' : '',
+      \   },
+      \ ]
+
 function! textobj#functioncall#i() abort
   return s:base_model('i')
 endfunction
