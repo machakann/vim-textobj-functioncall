@@ -144,15 +144,12 @@ function! s:gather_candidates(mode, count, pattern_list, opt) abort  "{{{
   let orig_pos = getpos('.')[1:2]
 
   " searching range limitation
-  let fileend = line('$')
   if a:opt.search_lines < 0
     let upper_line = 1
-    let lower_line = fileend
+    let lower_line = line('$')
   else
-    let upper_line = orig_pos[0] - a:opt.search_lines
-    let upper_line = upper_line < 1 ? 1 : upper_line
-    let lower_line = orig_pos[0] + a:opt.search_lines
-    let lower_line = lower_line > fileend ? fileend : lower_line
+    let upper_line = max([1, orig_pos[0] - a:opt.search_lines])
+    let lower_line = min([orig_pos[0] + a:opt.search_lines, line('$')])
   endif
 
   let rank       = 0
