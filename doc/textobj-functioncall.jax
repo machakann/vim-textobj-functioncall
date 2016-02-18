@@ -1,5 +1,5 @@
 *textobj-functioncall.txt*	関数を呼んでるっぽい箇所を選択する。
-						Last change:03-Oct-2015.
+						Last change:18-Feb-2016.
 
 書いた人   : machakann <mckn@outlook.jp>
 ライセンス : NYSL license
@@ -17,6 +17,8 @@ KEYMAPPINGS		|textobj-functioncall-keymappings|
 CONFIGURATION		|textobj-functioncall-configuration|
 
 ==============================================================================
+INTRODUCTION				*textobj-functioncall-introduction*
+
 *textobj-functioncall* はソースコード中の関数呼び出しっぽい部分を選択するため
 のテキストオブジェクトプラグインです。言うまでもないことですが、関数は多くの言
 語において重要な構成要素となっています。このプラグインはこの関数呼び出し部分を
