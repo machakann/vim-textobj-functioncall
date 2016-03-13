@@ -322,8 +322,9 @@ function! s:sort_candidates(candidates, top_line, bottom_line) abort  "{{{
     let idx += 1
   endfor
 
-  " candidates == [[head_pos], [bra_pos], [head_pos], [tail_pos], rank, distance]
-  let candidates = map(copy(a:candidates), '[v:val[0], v:val[1], v:val[2], v:val[3], v:val[4], ((accummed_list[v:val[3][0] - a:top_line] - v:val[0][1] + 1) + v:val[3][1])]')
+  " candidates == [[head_pos], [bra_pos], [ket_pos], [tail_pos], rank, distance]
+  let candidates = filter(copy(a:candidates), 'v:val[0] != s:null_pos && v:val[1] != s:null_pos && v:val[2] != s:null_pos && v:val[3] != s:null_pos')
+  let candidates = map(candidates, '[v:val[0], v:val[1], v:val[2], v:val[3], v:val[4], ((accummed_list[v:val[3][0] - a:top_line] - v:val[0][1] + 1) + v:val[3][1])]')
 
   return sort(candidates, 's:compare')
 endfunction
