@@ -87,34 +87,145 @@ function! s:base_model(mode) abort  "{{{
   let view = winsaveview()
   try
     let candidates = s:gather_candidates(a:mode, l:count, pattern_list, opt)
-    if a:mode[0] ==# 'a' && candidates == []
-      let candidates = s:gather_candidates('i', l:count, pattern_list, opt)
-    endif
-
-    let head = copy(s:null_pos)
-    let tail = copy(s:null_pos)
-    if candidates != []
-      let line_numbers = map(copy(candidates), 'v:val[0][0]') + map(copy(candidates), 'v:val[3][0]')
-      let top_line     = min(line_numbers)
-      let bottom_line  = max(line_numbers)
-
-      let sorted_candidates = s:sort_candidates(candidates, top_line, bottom_line)
-      if len(sorted_candidates) > l:count - 1
-        let [head_pos, bra_pos, ket_pos, tail_pos, _, _] = sorted_candidates[l:count - 1]
-        if a:mode[1] ==# 'p'
-          if !(bra_pos == ket_pos || (bra_pos[0] == ket_pos[0] && bra_pos[1]+1 == ket_pos[1]-1))
-            let [head, tail] = s:get_narrower_region(bra_pos, ket_pos)
-          endif
-        else
-          let head = head_pos
-          let tail = tail_pos
-        endif
-      endif
-    endif
+    let range = s:get_range(a:mode, l:count, candidates)
   finally
     call winrestview(view)
   endtry
+  call s:select(a:mode, range)
+endfunction
+"}}}
+function! s:gather_candidates(mode, count, pattern_list, opt) abort  "{{{
+  let orig_pos = getpos('.')[1:2]
 
+  " searching range limitation
+  if a:opt.search_lines < 0
+    let upper_line = 1
+    let lower_line = line('$')
+  else
+    let upper_line = max([1, orig_pos[0] - a:opt.search_lines])
+    let lower_line = min([orig_pos[0] + a:opt.search_lines, line('$')])
+  endif
+
+  let rank = 0
+  let candidates = []
+  for pattern in a:pattern_list
+    let rank += 1
+    call s:search_pattern(candidates, pattern, a:mode, a:count, rank, orig_pos, upper_line, lower_line)
+    call cursor(orig_pos)
+  endfor
+  return a:mode[0] ==# 'a' && candidates == []
+        \ ? s:gather_candidates('i', a:count, a:pattern_list, a:opt)
+        \ : candidates
+endfunction
+"}}}
+function! s:search_pattern(candidates, pattern, mode, count, rank, orig_pos, upper_line, lower_line) abort "{{{
+  let candidates = []
+  let header = a:pattern.header
+  let bra    = a:pattern.bra
+  let ket    = a:pattern.ket
+  let footer = a:pattern.footer
+
+  let loop = 0
+  let head = header . bra
+  let tail = ket . footer
+
+  let bra_pos = s:search_key_bra(a:mode, a:orig_pos, bra, ket, head, tail, a:upper_line, a:lower_line)
+  if bra_pos == s:null_pos | return [] | endif
+  let is_string_at_bra = s:is_string_literal(bra_pos)
+
+  while loop < a:count
+    " 'bra' should accompany with 'header'
+    if searchpos(head, 'bcen', a:upper_line) == bra_pos
+      let head_pos = searchpos(head, 'bcn', a:upper_line)
+
+      " search for the paired 'ket'
+      let ket_pos = searchpairpos(bra, '', ket, '', 's:is_string_literal(getpos(".")[1:2]) != is_string_at_bra', a:lower_line)
+      if ket_pos != s:null_pos
+        let tail_pos = searchpos(tail, 'ce', a:lower_line)
+        if tail_pos == s:null_pos
+          break
+        elseif searchpos(tail, 'bcn', a:upper_line) == ket_pos
+          " syntax check
+          if !is_string_at_bra || s:is_continuous_syntax(bra_pos, ket_pos)
+            " found the corresponded tail
+            call add(a:candidates, [head_pos, bra_pos, ket_pos, tail_pos, a:rank, s:get_buf_length(head_pos, tail_pos)])
+            let loop += 1
+          endif
+        endif
+      endif
+      call cursor(bra_pos)
+    endif
+
+    " move to the next 'bra'
+    let bra_pos = searchpairpos(bra, '', ket, 'b', '', a:upper_line)
+    if bra_pos == s:null_pos | break | endif
+    let is_string_at_bra = s:is_string_literal(bra_pos)
+  endwhile
+  return candidates
+endfunction
+"}}}
+function! s:search_key_bra(mode, orig_pos, bra, ket, head, tail, upper_line, lower_line) abort  "{{{
+  let bra_pos = s:null_pos
+  if a:mode[0] ==# 'a'
+    " search for the first 'bra'
+    if searchpos(a:tail, 'cn', a:lower_line) == a:orig_pos
+      let bra_pos = searchpairpos(a:bra, '', a:ket, 'b', '', a:upper_line)
+    endif
+    let bra_pos = searchpairpos(a:bra, '', a:ket, 'b', '', a:upper_line)
+  elseif a:mode[0] ==# 'i'
+    let head_start = searchpos(a:head, 'bc', a:upper_line)
+    let head_end   = searchpos(a:head, 'ce', a:lower_line)
+    call cursor(a:orig_pos)
+    let tail_start = searchpos(a:tail, 'bc', a:upper_line)
+    let tail_end   = searchpos(a:tail, 'ce', a:lower_line)
+
+    " check the initial position
+    if s:is_in_the_range(a:orig_pos, head_start, head_end)
+      " cursor is on a header
+      call cursor(head_end)
+    elseif s:is_in_the_range(a:orig_pos, tail_start, tail_end)
+      " cursor is on a footer
+      call cursor(tail_start)
+      if tail_start[1] != 1
+        normal! h
+      endif
+    else
+      " cursor is in between a bra and a ket
+      call cursor(a:orig_pos)
+    endif
+
+    " move to the corresponded 'bra'
+    let bra_pos = searchpairpos(a:bra, '', a:ket, 'bc', '', a:upper_line)
+  endif
+  return bra_pos
+endfunction
+"}}}
+function! s:get_range(mode, count, candidates) abort "{{{
+  let head = copy(s:null_pos)
+  let tail = copy(s:null_pos)
+  if a:candidates != []
+    let line_numbers = map(copy(a:candidates), 'v:val[0][0]') + map(copy(a:candidates), 'v:val[3][0]')
+    let top_line     = min(line_numbers)
+    let bottom_line  = max(line_numbers)
+
+    let sorted_candidates = s:sort_candidates(a:candidates, top_line, bottom_line)
+    if len(sorted_candidates) > a:count - 1
+      let [head_pos, bra_pos, ket_pos, tail_pos, _, _] = sorted_candidates[a:count - 1]
+      if a:mode[1] ==# 'p'
+        if !(bra_pos == ket_pos || (bra_pos[0] == ket_pos[0] && bra_pos[1]+1 == ket_pos[1]-1))
+          let [head, tail] = s:get_narrower_region(bra_pos, ket_pos)
+        endif
+      else
+        let head = head_pos
+        let tail = tail_pos
+      endif
+    endif
+  endif
+  return [head, tail]
+endfunction
+"}}}
+function! s:select(mode, range) abort  "{{{
+  let [head, tail] = a:range
   if head != s:null_pos && tail != s:null_pos
     " select textobject
     if a:mode == "\<C-v>"
@@ -136,103 +247,6 @@ function! s:base_model(mode) abort  "{{{
       normal! gv
     endif
   endif
-
-  return
-endfunction
-"}}}
-function! s:gather_candidates(mode, count, pattern_list, opt) abort  "{{{
-  let orig_pos = getpos('.')[1:2]
-
-  " searching range limitation
-  if a:opt.search_lines < 0
-    let upper_line = 1
-    let lower_line = line('$')
-  else
-    let upper_line = max([1, orig_pos[0] - a:opt.search_lines])
-    let lower_line = min([orig_pos[0] + a:opt.search_lines, line('$')])
-  endif
-
-  let rank       = 0
-  let candidates = []
-  for pattern in a:pattern_list
-    let rank += 1
-    let header = pattern.header
-    let bra    = pattern.bra
-    let ket    = pattern.ket
-    let footer = pattern.footer
-
-    let loop = 0
-    let head = header . bra
-    let tail = ket . footer
-
-    " start searching
-    if a:mode[0] ==# 'a'
-      " search for the first 'bra'
-      if searchpos(tail, 'cn', lower_line) == orig_pos
-        let bra_pos = searchpairpos(bra, '', ket, 'b', '', upper_line)
-      endif
-      let bra_pos = searchpairpos(bra, '', ket, 'b', '', upper_line)
-      let is_string_at_bra = s:is_string_literal(bra_pos)
-    elseif a:mode[0] ==# 'i'
-      let head_start = searchpos(head, 'bc', upper_line)
-      let head_end   = searchpos(head, 'ce', lower_line)
-      call cursor(orig_pos)
-      let tail_start = searchpos(tail, 'bc', upper_line)
-      let tail_end   = searchpos(tail, 'ce', lower_line)
-
-      " check the initial position
-      if s:is_in_the_range(orig_pos, head_start, head_end)
-        " cursor is on a header
-        call cursor(head_end)
-      elseif s:is_in_the_range(orig_pos, tail_start, tail_end)
-        " cursor is on a footer
-        call cursor(tail_start)
-        if tail_start[1] != 1
-          normal! h
-        endif
-      else
-        " cursor is in between a bra and a ket
-        call cursor(orig_pos)
-      endif
-
-      " move to the corresponded 'bra'
-      let bra_pos = searchpairpos(bra, '', ket, 'bc', '', upper_line)
-      if bra_pos == s:null_pos | continue | endif
-      let is_string_at_bra = s:is_string_literal(bra_pos)
-    endif
-
-    while loop < a:count
-      " 'bra' should accompany with 'header'
-      if searchpos(head, 'bcen', upper_line) == bra_pos
-        let head_pos = searchpos(head, 'bcn', upper_line)
-
-        " search for the paired 'ket'
-        let ket_pos = searchpairpos(bra, '', ket, '', 's:is_string_literal(getpos(".")[1:2]) != is_string_at_bra', lower_line)
-        if ket_pos != s:null_pos
-          let tail_pos = searchpos(tail, 'ce', lower_line)
-          if tail_pos == s:null_pos
-            break
-          elseif searchpos(tail, 'bcn', upper_line) == ket_pos
-            " syntax check
-            if !is_string_at_bra || s:is_continuous_syntax(bra_pos, ket_pos)
-              " found the corresponded tail
-              let candidates += [[head_pos, bra_pos, ket_pos, tail_pos, rank]]
-              let loop += 1
-            endif
-          endif
-        endif
-        call cursor(bra_pos)
-      endif
-
-      " move to the next 'bra'
-      let bra_pos = searchpairpos(bra, '', ket, 'b', '', upper_line)
-      if bra_pos == s:null_pos | break | endif
-      let is_string_at_bra = s:is_string_literal(bra_pos)
-    endwhile
-
-    call cursor(orig_pos)
-  endfor
-  return candidates
 endfunction
 "}}}
 function! s:is_in_the_range(pos, head, tail) abort  "{{{
@@ -311,22 +325,18 @@ function! s:get_narrower_region(head_edge, tail_edge) abort "{{{
 endfunction
 "}}}
 function! s:sort_candidates(candidates, top_line, bottom_line) abort  "{{{
-  let length_list = map(getline(a:top_line, a:bottom_line), 'len(v:val) + 1')
-
-  let idx = 0
-  let accummed_length = 0
-  let accummed_list   = [0]
-  for length in length_list[1:]
-    let accummed_length  = accummed_length + length_list[idx]
-    let accummed_list   += [accummed_length]
-    let idx += 1
-  endfor
-
-  " candidates == [[head_pos], [bra_pos], [ket_pos], [tail_pos], rank, distance]
-  let candidates = filter(copy(a:candidates), 'v:val[0] != s:null_pos && v:val[1] != s:null_pos && v:val[2] != s:null_pos && v:val[3] != s:null_pos')
-  let candidates = map(candidates, '[v:val[0], v:val[1], v:val[2], v:val[3], v:val[4], ((accummed_list[v:val[3][0] - a:top_line] - v:val[0][1] + 1) + v:val[3][1])]')
-
-  return sort(candidates, 's:compare')
+  " NOTE: candidates == [[head_pos], [bra_pos], [ket_pos], [tail_pos], rank, distance]
+  call filter(a:candidates, 'v:val[0] != s:null_pos && v:val[1] != s:null_pos && v:val[2] != s:null_pos && v:val[3] != s:null_pos')
+  return sort(a:candidates, 's:compare')
+endfunction
+"}}}
+function! s:get_buf_length(start, end) abort  "{{{
+  if a:start[0] == a:end[0]
+    let len = a:end[1] - a:start[1] + 1
+  else
+    let len = (line2byte(a:end[0]) + a:end[1]) - (line2byte(a:start[0]) + a:start[1]) + 1
+  endif
+  return len
 endfunction
 "}}}
 function! s:compare(i1, i2) abort "{{{
