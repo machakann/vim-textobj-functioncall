@@ -349,6 +349,10 @@ function! s:compare(i1, i2) abort "{{{
   endif
 endfunction
 "}}}
+function! s:filetypekey() abort "{{{
+  return &filetype !=# '' ? &filetype : '_'
+endfunction
+"}}}
 
 " utilities
 function! s:create_key(filetype) abort  "{{{
@@ -377,9 +381,7 @@ function! textobj#functioncall#add(header, bra, ket, footer, ...) abort "{{{
     return
   endif
 
-  let filetype = a:0 > 0 ? a:1
-             \ : &filetype !=# '' ? &filetype
-             \ : '_'
+  let filetype = a:0 > 0 ? a:1 : s:filetypekey()
   call s:create_key(filetype)
 
   let g:textobj_functioncall_patterns[filetype] += [{
@@ -391,22 +393,18 @@ function! textobj#functioncall#add(header, bra, ket, footer, ...) abort "{{{
 endfunction
 "}}}
 function! textobj#functioncall#clear(...) abort "{{{
-  let filetype = a:0 > 0 ? a:1
-             \ : &filetype !=# '' ? &filetype
-             \ : '_'
+  let filetype = a:0 > 0 ? a:1 : s:filetypekey()
   call s:create_key(filetype)
   let g:textobj_functioncall_patterns[filetype] = []
 endfunction
 "}}}
 function! textobj#functioncall#include(target, ...) abort "{{{
-  let dest = a:0 > 0 ? a:1
-         \ : &filetype !=# '' ? &filetype
-         \ : '_'
+  let filetype = a:0 > 0 ? a:1 : s:filetypekey()
   let included = has_key(g:textobj_functioncall_patterns, a:target)
              \ ? deepcopy(g:textobj_functioncall_patterns[a:target])
              \ : []
-  call s:create_key(dest)
-  let g:textobj_functioncall_patterns[dest] += included
+  call s:create_key(filetype)
+  let g:textobj_functioncall_patterns[filetype] += included
 endfunction
 "}}}
 
