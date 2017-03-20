@@ -1,5 +1,5 @@
 *textobj-functioncall.txt*	関数を呼んでるっぽい箇所を選択する。
-						Last change:18-Feb-2016.
+						Last change:20-Mar-2017.
 
 書いた人   : machakann <mckn@outlook.jp>
 ライセンス : NYSL license
@@ -212,5 +212,36 @@ textobj#functioncall#include(target [, filetype])
 >
 		call textobj#functioncall#include('c', 'cpp')
 <
+
+					*textobj#functioncall#addlist()*
+textobj#functioncall#addlist(rulelist [, filetype])
+	新しい定義パターンを適切に追加します。これは
+	|textobj#functioncall#add()| に似ていますが、大量のルールを一度に追加
+	する場合に便利です。引数 rulelist には "header", "bra", "ket",
+	"footer" キーを持つ辞書のリストを渡してください。
+	"bra" および "ket" キーに空文字列は許容されません。
+>
+		let commands = [
+		  \   {
+		  \     'header': '\m\\\a\+\*\?\%({[^}]*}\)*\%(\[[^]]*\]\)*',
+		  \     'bra': '{',
+		  \     'ket': '}',
+		  \     'footer': '',
+		  \   },
+		  \   {
+		  \     'header': '\m\\\a\+\*\?\%(\[[^]]*\]\)*\%({[^}]*}\)*',
+		  \     'bra': '{',
+		  \     'ket': '}',
+		  \     'footer': '',
+		  \   },
+		  \ ]
+	call textobj#functioncall#add(commands, 'tex')
+<
+	もし第五引数の "filetype" が指定されなければ現在編集中のファイルタイプ
+	へ設定されます。なので、 vimrcへ記述する場合は必ず指定してください。
+	"filetype" にマッチするキーがまだ存在していなかった場合、'_' キーのリ
+	ストか内部パターンのリストを"filetype" へ追加したのちに新しいパターン
+	を追加します。もし、必要なければ、先に |textobj#functioncall#clear()|
+	を実行してください。
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:noet:

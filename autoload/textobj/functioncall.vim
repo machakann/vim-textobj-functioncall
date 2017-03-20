@@ -407,6 +407,13 @@ function! textobj#functioncall#include(target, ...) abort "{{{
   let g:textobj_functioncall_patterns[filetype] += included
 endfunction
 "}}}
+function! textobj#functioncall#addlist(rulelist, ...) abort "{{{
+  let filetype = a:0 > 0 ? a:1 : s:filetypekey()
+  call s:create_key(filetype)
+  let filter = 'v:val.bra !=# "" && v:val.ket !=# ""'
+  let g:textobj_functioncall_patterns[filetype] += filter(deepcopy(a:rulelist), filter)
+endfunction
+"}}}
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
