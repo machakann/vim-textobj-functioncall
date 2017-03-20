@@ -178,7 +178,7 @@ g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
 <
 	リストの一つ一つの要素は header, bra, ket, footer の四つのキーを持つ辞
 	書です。それぞれのキーは関数名、左括弧、右括弧、右括弧に続く部分にマッ
-	チする正規表現となります。
+	チする正規表現となります。 header か footer が空の場合は省略可能です。
 
 
 Functions~
@@ -226,13 +226,11 @@ textobj#functioncall#addlist(rulelist [, filetype])
 		  \     'header': '\m\\\a\+\*\?\%({[^}]*}\)*\%(\[[^]]*\]\)*',
 		  \     'bra': '{',
 		  \     'ket': '}',
-		  \     'footer': '',
 		  \   },
 		  \   {
 		  \     'header': '\m\\\a\+\*\?\%(\[[^]]*\]\)*\%({[^}]*}\)*',
 		  \     'bra': '{',
 		  \     'ket': '}',
-		  \     'footer': '',
 		  \   },
 		  \ ]
 	call textobj#functioncall#add(commands, 'tex')

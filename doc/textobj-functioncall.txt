@@ -182,7 +182,8 @@ g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
 	named header, bra, ket, footer. Each value is a regular expression
 	pattern matched with the name of function, the left-side of
 	parenthesis, the right-side of parenthesis, following part after the
-	right-side of parenthesis if needed.
+	right-side of parenthesis if needed. In case of header and/or footer
+	is empty, it could be omittable.
 
 
 Functions~
@@ -231,13 +232,11 @@ textobj#functioncall#addlist(rulelist [, filetype])
 		  \     'header': '\m\\\a\+\*\?\%({[^}]*}\)*\%(\[[^]]*\]\)*',
 		  \     'bra': '{',
 		  \     'ket': '}',
-		  \     'footer': '',
 		  \   },
 		  \   {
 		  \     'header': '\m\\\a\+\*\?\%(\[[^]]*\]\)*\%({[^}]*}\)*',
 		  \     'bra': '{',
 		  \     'ket': '}',
-		  \     'footer': '',
 		  \   },
 		  \ ]
 		call textobj#functioncall#add(commands, 'tex')

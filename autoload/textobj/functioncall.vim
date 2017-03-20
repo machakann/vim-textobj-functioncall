@@ -118,10 +118,10 @@ endfunction
 "}}}
 function! s:search_pattern(pattern, kind, mode, count, rank, cursorpos, upperline, lowerline) abort "{{{
   let candidates = []
-  let header = a:pattern.header
+  let header = get(a:pattern, 'header', '')
   let bra    = a:pattern.bra
   let ket    = a:pattern.ket
-  let footer = a:pattern.footer
+  let footer = get(a:pattern, 'footer', '')
 
   let head = header . bra
   let tail = ket . footer
