@@ -394,7 +394,7 @@ function! textobj#functioncall#clear(...) abort "{{{
   let filetype = a:0 > 0 ? a:1
              \ : &filetype != '' ? &filetype
              \ : '_'
-  call create_key(filetype)
+  call s:create_key(filetype)
   let g:textobj_functioncall_patterns[filetype] = []
 endfunction
 "}}}
