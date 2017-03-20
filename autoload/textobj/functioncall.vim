@@ -228,7 +228,7 @@ function! s:select(mode, range) abort  "{{{
   let [head, tail] = a:range
   if head != s:null_pos && tail != s:null_pos
     " select textobject
-    if a:mode == "\<C-v>"
+    if a:mode ==# "\<C-v>"
       execute "normal! \<C-v>"
     else
       normal! v
@@ -239,7 +239,7 @@ function! s:select(mode, range) abort  "{{{
     call cursor(tail)
 
     " counter measure for the 'selection' option being 'exclusive'
-    if &selection == 'exclusive'
+    if &selection ==# 'exclusive'
       normal! l
     endif
   else
@@ -378,7 +378,7 @@ function! textobj#functioncall#add(header, bra, ket, footer, ...) abort "{{{
   endif
 
   let filetype = a:0 > 0 ? a:1
-             \ : &filetype != '' ? &filetype
+             \ : &filetype !=# '' ? &filetype
              \ : '_'
   call s:create_key(filetype)
 
@@ -392,7 +392,7 @@ endfunction
 "}}}
 function! textobj#functioncall#clear(...) abort "{{{
   let filetype = a:0 > 0 ? a:1
-             \ : &filetype != '' ? &filetype
+             \ : &filetype !=# '' ? &filetype
              \ : '_'
   call s:create_key(filetype)
   let g:textobj_functioncall_patterns[filetype] = []
@@ -400,7 +400,7 @@ endfunction
 "}}}
 function! textobj#functioncall#include(target, ...) abort "{{{
   let dest = a:0 > 0 ? a:1
-         \ : &filetype != '' ? &filetype
+         \ : &filetype !=# '' ? &filetype
          \ : '_'
   let included = has_key(g:textobj_functioncall_patterns, a:target)
              \ ? deepcopy(g:textobj_functioncall_patterns[a:target])
