@@ -239,7 +239,9 @@ function! s:search_key_bra(kind, cursorpos, bra, ket, head, tail, stopline) abor
     elseif s:is_in_the_range(a:cursorpos, tail_start, tail_end)
       " cursor is on a footer
       call cursor(tail_start)
-      if tail_start[1] != 1
+      if tail_start[1] == 1
+        normal! k$
+      else
         normal! h
       endif
     else
@@ -344,15 +346,20 @@ endfunction
 function! s:get_narrower_region(head_edge, tail_edge) abort "{{{
   let whichwrap  = &whichwrap
   let &whichwrap = 'h,l'
+  let [visualhead, visualtail] = [getpos("'<"), getpos("'>")]
   try
+    normal! v
     call cursor(a:head_edge)
     normal! l
     let head = getpos('.')[1:2]
     call cursor(a:tail_edge)
     normal! h
     let tail = getpos('.')[1:2]
+    execute "normal! \<Esc>"
   finally
     let &whichwrap = whichwrap
+    call setpos("'<", visualhead)
+    call setpos("'>", visualtail)
   endtry
   return [head, tail]
 endfunction
