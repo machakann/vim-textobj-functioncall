@@ -139,12 +139,13 @@ function! s:textobj.search(kind, mode, ...) dict abort "{{{
   return elected == {} ? {} : s:Region(a:kind, elected, visualmode)
 endfunction
 "}}}
-function! s:Candidate(headpos, brapos, ketpos, tailpos, rank) abort "{{{
+function! s:Candidate(headpos, brapos, ketpos, tailpos, pattern, rank) abort "{{{
   return {
         \   'head': a:headpos,
         \   'bra': a:brapos,
         \   'ket': a:ketpos,
         \   'tail': a:tailpos,
+        \   'pattern': a:pattern,
         \   'rank': a:rank,
         \   'len': s:get_buf_length(a:headpos, a:tailpos)
         \ }
@@ -152,7 +153,7 @@ endfunction
 "}}}
 function! s:Region(kind, candidate, type) abort "{{{
   if a:kind[1] ==# 'p'
-    let [head, tail] = s:get_narrower_region(a:candidate.bra, a:candidate.ket)
+    let [head, tail] = s:get_parameter_region(a:candidate)
   else
     let [head, tail] = [a:candidate.head, a:candidate.tail]
   endif
@@ -189,8 +190,11 @@ function! s:search_pattern(pattern, kind, mode, count, rank, cursorpos, stopline
 
   while len(candidates) < a:count
     " 'bra' should accompany with 'header'
-    if searchpos(head, 'bcen', a:stopline.top) == brapos
-      let headpos = searchpos(head, 'bcn', a:stopline.top)
+    let headstart = searchpos(head, 'bc', a:stopline.top)
+    let headend = searchpos(head, 'ce', a:stopline.bottom)
+    call cursor(brapos)
+    if s:is_in_the_range(brapos, headstart, headend)
+      let headpos = headstart
 
       " search for the paired 'ket'
       let ketpos = searchpairpos(bra, '', ket, '', 's:is_string_literal(getpos(".")[1:2]) != is_string_at_bra', a:stopline.bottom)
@@ -199,7 +203,7 @@ function! s:search_pattern(pattern, kind, mode, count, rank, cursorpos, stopline
         if tailpos == s:null_pos
           break
         elseif searchpos(tail, 'bcn', a:stopline.top) == ketpos
-          let candidate = s:Candidate(headpos, brapos, ketpos, tailpos, a:rank)
+          let candidate = s:Candidate(headpos, brapos, ketpos, tailpos, a:pattern, a:rank)
           if s:is_wide_enough(candidate, a:kind, a:mode) && s:is_syntax_ok(candidate, is_string_at_bra)
             " found the corresponded tail
             let candidates += [candidate]
@@ -343,16 +347,18 @@ function! s:is_continuous_syntax(brapos, ketpos) abort  "{{{
   return 1
 endfunction
 "}}}
-function! s:get_narrower_region(head_edge, tail_edge) abort "{{{
+function! s:get_parameter_region(candidate) abort "{{{
   let whichwrap  = &whichwrap
   let &whichwrap = 'h,l'
   let [visualhead, visualtail] = [getpos("'<"), getpos("'>")]
   try
     normal! v
-    call cursor(a:head_edge)
+    call cursor(a:candidate.bra)
+    call search(a:candidate.pattern.bra, 'ce', a:candidate.ket[0])
     normal! l
     let head = getpos('.')[1:2]
-    call cursor(a:tail_edge)
+    normal! o
+    call cursor(a:candidate.ket)
     normal! h
     let tail = getpos('.')[1:2]
     execute "normal! \<Esc>"
