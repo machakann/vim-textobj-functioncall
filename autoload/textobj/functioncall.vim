@@ -326,7 +326,7 @@ function! s:is_in_the_range(pos, head, tail) abort  "{{{
 endfunction
 "}}}
 function! s:is_string_literal(pos) abort  "{{{
-  return match(map(synstack(a:pos[0], a:pos[1]), 'synIDattr(synIDtrans(v:val), "name")'), 'String') > -1
+  return match(map(synstack(a:pos[0], a:pos[1]), 'synIDattr(synIDtrans(v:val), "name")'), '\%(String\|Constant\)') > -1
 endfunction
 "}}}
 function! s:is_continuous_syntax(brapos, ketpos) abort  "{{{
