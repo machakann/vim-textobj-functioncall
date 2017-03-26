@@ -197,7 +197,8 @@ function! s:search_pattern(pattern, kind, mode, count, rank, cursorpos, stopline
       let headpos = headstart
 
       " search for the paired 'ket'
-      let ketpos = searchpairpos(bra, '', ket, '', 's:is_string_literal(getpos(".")[1:2]) != is_string_at_bra', a:stopline.bottom)
+      let skipcondition = 's:is_string_literal(getpos(".")[1:2]) != is_string_at_bra'
+      let ketpos = searchpairpos(bra, '', ket, '', skipcondition, a:stopline.bottom)
       if ketpos != s:null_pos
         let tailpos = searchpos(tail, 'ce', a:stopline.bottom)
         if tailpos == s:null_pos
