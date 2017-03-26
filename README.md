@@ -1,6 +1,9 @@
 vim-textobj-functioncall
 ========================
 
+[![Build status](https://ci.appveyor.com/api/projects/status/7fk1871r0a8bmb5h?svg=true)](https://ci.appveyor.com/project/machakann/vim-textobj-functioncall)
+[![Build Status](https://travis-ci.org/machakann/vim-textobj-functioncall.svg?branch=master)](https://travis-ci.org/machakann/vim-textobj-functioncall)
+
 The vim textobject plugin to treat function-call regions.
 
 Default mappings are assigned to `if` and `af`.
