@@ -1,5 +1,5 @@
 *textobj-functioncall.txt*	Select a region that calls function.
-						Last change:20-Mar-2017.
+						Last change:16-Feb-2019.
 
 Author  : machakann <mckn@outlook.jp>
 License : NYSL license
@@ -185,77 +185,5 @@ g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
 	right-side of parenthesis if needed. In case of header and/or footer
 	is empty, it could be omittable.
 
-
-Functions~
-					*textobj#functioncall#add()*
-textobj#functioncall#add(header, bra, ket, footer [, filetype])
-	Add the new pattern safely. If you do not assigned "filetype", this
-	function add the new pattern to the current filetype. Thus it should
-	be explicitly assigned when you call this function in your vimrc. If
-	there is no key matched with "filetype", this function includes the
-	pattern list of '_' key or the intrinsic pattern first and then add
-	your pattern. If you do not want, call |textobj#functioncall#clear()|
-	first.
->
-		call textobj#functioncall#add('\<\h\k*', '(', ')', ';', 'c')
-<
-
-					*textobj#functioncall#clear()*
-textobj#functioncall#clear([filetype])
-	Clear the pattern list. If you do not assigned "filetype", this
-	function clear the pattern list of the current filetype. Thus it
-	should be explicitly assigned when you call this function in your
-	vimrc.
->
-		call textobj#functioncall#clear('vim')
-<
-
-					*textobj#functioncall#include()*
-textobj#functioncall#include(target [, filetype])
-	Include the "target" pattern list to "filetype" pattern list. If you
-	do not assigned "filetype", this function include the "target" pattern
-	to the current filetype. Thus it should be explicitly assigned when
-	you call this function in your vimrc.
->
-		call textobj#functioncall#include('c', 'cpp')
-<
-
-					*textobj#functioncall#addlist()*
-textobj#functioncall#addlist(rulelist [, filetype])
-	Add the new patterns safely. This is similar to
-	|textobj#functioncall#add()| but is useful when adding a lot of rules
-	at a time. Pass a list of dictionaries with "header", "bra", "ket",
-	"footer" key. The values of "bra" and "ket" key should not be empty.
->
-		let commands = [
-		  \   {
-		  \     'header': '\m\\\a\+\*\?\%({[^}]*}\)*\%(\[[^]]*\]\)*',
-		  \     'bra': '{',
-		  \     'ket': '}',
-		  \   },
-		  \   {
-		  \     'header': '\m\\\a\+\*\?\%(\[[^]]*\]\)*\%({[^}]*}\)*',
-		  \     'bra': '{',
-		  \     'ket': '}',
-		  \   },
-		  \ ]
-		call textobj#functioncall#add(commands, 'tex')
-<
-	If you do not assigned "filetype", this function add the new pattern
-	to the current filetype. Thus it should be explicitly assigned when
-	you call this function in your vimrc. If there is no key matched with
-	"filetype", this function includes the pattern list of '_' key or the
-	intrinsic pattern first and then add your pattern. If you do not want,
-	call |textobj#functioncall#clear()| first.
-
-					*textobj#functioncall#setlist()*
-textobj#functioncall#setlist(rulelist [, filetype])
-	Define multiple rules to a filetype, without inheriting the default
-	rules. This is same as:
->
-		call textobj#functioncall#clear(filetype)
-		call textobj#functioncall#addlist(rulelist, filetype)
-<
-	See |textobj#functioncall#clear()|, |textobj#functioncall#addlist()|.
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:noet:

@@ -1,5 +1,5 @@
 *textobj-functioncall.txt*	関数を呼んでるっぽい箇所を選択する。
-						Last change:20-Mar-2017.
+						Last change:16-Feb-2019.
 
 書いた人   : machakann <mckn@outlook.jp>
 ライセンス : NYSL license
@@ -180,76 +180,5 @@ g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
 	書です。それぞれのキーは関数名、左括弧、右括弧、右括弧に続く部分にマッ
 	チする正規表現となります。 header か footer が空の場合は省略可能です。
 
-
-Functions~
-					*textobj#functioncall#add()*
-textobj#functioncall#add(header, bra, ket, footer [, filetype])
-	新しい定義パターンを適切に追加します。もし第五引数の "filetype" が指定
-	されなければ現在編集中のファイルタイプへ設定されます。なので、 vimrc
-	へ記述する場合は必ず指定してください。 "filetype" にマッチするキーがま
-	だ存在していなかった場合、'_' キーのリストか内部パターンのリストを
-	"filetype" へ追加したのちに新しいパターンを追加します。もし、必要なけ
-	れば、先に |textobj#functioncall#clear()| を実行してください。
->
-		call textobj#functioncall#add('\<\h\k*', '(', ')', ';', 'c')
-<
-
-					*textobj#functioncall#clear()*
-textobj#functioncall#clear([filetype])
-	定義パターンのリストを空にします。もし "filetype" が指定されなければ編
-	集中のファイルタイプのリストを空にします。なので、 vimrcへ記述する場合
-	は必ず指定してください。
->
-		call textobj#functioncall#clear('vim')
-<
-
-					*textobj#functioncall#include()*
-textobj#functioncall#include(target [, filetype])
-	第一引数 "target" に指定されたファイルタイプのパターンリストを第二引数
-	"filetype" に指定されたファイルタイプのリストへ組み込みます。第二引数
-	を省略すれば編集中のファイルタイプのリストへ組み込みますが、 vimrc へ
-	記述する場合は必ず指定してください。
->
-		call textobj#functioncall#include('c', 'cpp')
-<
-
-					*textobj#functioncall#addlist()*
-textobj#functioncall#addlist(rulelist [, filetype])
-	新しい定義パターンを適切に追加します。これは
-	|textobj#functioncall#add()| に似ていますが、大量のルールを一度に追加
-	する場合に便利です。引数 rulelist には "header", "bra", "ket",
-	"footer" キーを持つ辞書のリストを渡してください。
-	"bra" および "ket" キーに空文字列は許容されません。
->
-		let commands = [
-		  \   {
-		  \     'header': '\m\\\a\+\*\?\%({[^}]*}\)*\%(\[[^]]*\]\)*',
-		  \     'bra': '{',
-		  \     'ket': '}',
-		  \   },
-		  \   {
-		  \     'header': '\m\\\a\+\*\?\%(\[[^]]*\]\)*\%({[^}]*}\)*',
-		  \     'bra': '{',
-		  \     'ket': '}',
-		  \   },
-		  \ ]
-	call textobj#functioncall#add(commands, 'tex')
-<
-	もし第五引数の "filetype" が指定されなければ現在編集中のファイルタイプ
-	へ設定されます。なので、 vimrcへ記述する場合は必ず指定してください。
-	"filetype" にマッチするキーがまだ存在していなかった場合、'_' キーのリ
-	ストか内部パターンのリストを"filetype" へ追加したのちに新しいパターン
-	を追加します。もし、必要なければ、先に |textobj#functioncall#clear()|
-	を実行してください。
-
-					*textobj#functioncall#setlist()*
-textobj#functioncall#setlist(rulelist [, filetype])
-	複数のルールをデフォルトルールを引き継がずに設定します。これは以下と等
-	価です。
->
-		call textobj#functioncall#clear(filetype)
-		call textobj#functioncall#addlist(rulelist, filetype)
-<
-	参考: |textobj#functioncall#clear()|, |textobj#functioncall#addlist()|
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:noet:
