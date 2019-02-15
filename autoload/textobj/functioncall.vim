@@ -9,52 +9,23 @@ let s:type_dict = type({})
 let s:null_pos  = [0, 0]
 
 " default patterns
-let s:patterns = {}
-let s:patterns['_'] = [
-      \   {
-      \     'header' : '\<\h\k*',
-      \     'bra'    : '(',
-      \     'ket'    : ')',
-      \     'footer' : '',
-      \   },
-      \   {
-      \     'header' : '\<\h\k*',
-      \     'bra'    : '\[',
-      \     'ket'    : '\]',
-      \     'footer' : '',
-      \   },
-      \ ]
+unlet g:textobj_functioncall_default_patterns
+let g:textobj_functioncall_default_patterns = [
+  \   {
+  \     'header' : '\<\h\k*',
+  \     'bra'    : '(',
+  \     'ket'    : ')',
+  \     'footer' : '',
+  \   },
+  \   {
+  \     'header' : '\<\h\k*',
+  \     'bra'    : '\[',
+  \     'ket'    : '\]',
+  \     'footer' : '',
+  \   },
+  \ ]
+lockvar! g:textobj_functioncall_default_patterns
 
-let s:patterns['vim'] = [
-      \   {
-      \     'header' : '\C\<\%(\h\|[sa]:\h\|g:[A-Z]\)\k*',
-      \     'bra'    : '(',
-      \     'ket'    : ')',
-      \     'footer' : '',
-      \   },
-      \   {
-      \     'header' : '\%(^\|[^:]\)\zs\<\%([abglstvw]:\)\?\h\k*',
-      \     'bra'    : '\[',
-      \     'ket'    : '\]',
-      \     'footer' : '',
-      \   },
-      \ ]
-
-" To include multibyte characters
-let s:patterns['julia'] = [
-      \   {
-      \     'header' : '\%#=2\<[[:upper:][:lower:]_]\k*!\?',
-      \     'bra'    : '(',
-      \     'ket'    : ')',
-      \     'footer' : '',
-      \   },
-      \   {
-      \     'header' : '\%#=2\<[[:upper:][:lower:]_]\k*',
-      \     'bra'    : '\[',
-      \     'ket'    : '\]',
-      \     'footer' : '',
-      \   },
-      \ ]
 
 function! textobj#functioncall#i(mode) abort "{{{
   call s:common('i', a:mode)
@@ -105,12 +76,9 @@ function! s:user_conf(name, default) abort    "{{{
 endfunction
 "}}}
 function! s:resolve_patterns() abort  "{{{
-  let pattern_dict = get(g:, 'textobj_functioncall_patterns', s:patterns)
-  if has_key(pattern_dict, &filetype)
-    return pattern_dict[&filetype]
-  else
-    return pattern_dict['_']
-  endif
+  return get(b:, 'textobj_functioncall_patterns',
+       \ get(g:, 'textobj_functioncall_patterns',
+       \ g:textobj_functioncall_default_patterns))
 endfunction
 "}}}
 

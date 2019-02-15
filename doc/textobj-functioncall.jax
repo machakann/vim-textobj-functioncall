@@ -138,16 +138,12 @@ g:textobj_functioncall_search_lines	*g:textobj_functioncall_search_lines*
 	なファイルで動作が遅くなるかもしれません。デフォルト値は30です。
 
 g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
-	関数呼び出し様の部分の定義パターンリストをファイルタイプごとに保持した
-	辞書変数です。辞書変数のキー名がファイルタイプ名に相当し、その値にリス
-	トとして定義パターンが保持されます。編集中のファイルタイプに一致する
-	キーが存在しない場合、汎用のキー '_' が使用されます。もし、
-	|g:textobj_functioncall_patterns| が存在しない場合は内部的に保持したサ
-	ンプルパターンが使用されます。この内部パターンと等価となる設定は次のよ
-	うに書けます。
+	関数呼び出しにマッチするルールのリストです。一つのルールは一つの辞書か
+	らなり、四つのキー (`header`, `bra`, `ket`, `footer`) をもっています。
+	それぞれの値は正規表現パターンであり、`header` は関数名に、`bra` と
+	`ket` は両括弧に、`footer` は閉じ括弧に続く文字列にマッチします。
 >
-	let g:textobj_functioncall_patterns = {}
-	let g:textobj_functioncall_patterns['_'] = [
+	let g:textobj_functioncall_patterns = [
 		\   {
 		\     'header' : '\<\h\k*',
 		\     'bra'    : '(',
@@ -156,29 +152,16 @@ g:textobj_functioncall_patterns		*g:textobj_functioncall_patterns*
 		\   },
 		\   {
 		\     'header' : '\<\h\k*',
-		\     'bra'    : '\[',
-		\     'ket'    : '\]',
-		\     'footer' : '',
-		\   },
-		\ ]
-	let g:textobj_functioncall_patterns['vim'] = [
-		\   {
-		\     'header' : '\<\%(s:\)\?\k*',
-		\     'bra'    : '(',
-		\     'ket'    : ')',
-		\     'footer' : '',
-		\   },
-		\   {
-		\     'header' : '\%(^\|[^:]\)\zs\<\%([abglstvw]:\)\?\h\k*',
 		\     'bra'    : '\[',
 		\     'ket'    : '\]',
 		\     'footer' : '',
 		\   },
 		\ ]
 <
-	リストの一つ一つの要素は header, bra, ket, footer の四つのキーを持つ辞
-	書です。それぞれのキーは関数名、左括弧、右括弧、右括弧に続く部分にマッ
-	チする正規表現となります。 header か footer が空の場合は省略可能です。
+	|g:textobj_functioncall_patterns| が定義されていない場合、
+	`g:textobj_functioncall_default_patterns` が使われます。
+	`b:textobj_functioncall_patterns` がバッファに定義されている場合、これ
+	が優先して使われます。
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:noet:
