@@ -9,7 +9,7 @@ let s:type_dict = type({})
 let s:null_pos  = [0, 0]
 
 " default patterns
-unlet g:textobj_functioncall_default_patterns
+unlet! g:textobj_functioncall_default_patterns
 let g:textobj_functioncall_default_patterns = [
   \   {
   \     'header' : '\<\h\k*',
