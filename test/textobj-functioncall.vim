@@ -3,9 +3,9 @@ let s:suite = themis#suite('textobj-functioncall')
 
 function! s:suite.before_each() abort "{{{
   %delete
-  syntax off
+  syntax clear
   set filetype=
-  unlet! g:textobj_functioncall_patterns
+  unlet! g:textobj_functioncall_patterns b:textobj_functioncall_patterns
 endfunction
 "}}}
 function! s:suite.after() abort "{{{
@@ -83,9 +83,7 @@ function! s:suite.basic() dict abort "{{{
         \ ]
   call s:trytestset(testset)
 
-  let g:textobj_functioncall_patterns = {
-        \   '_': [{'header': '', 'bra': '(', 'ket': ')', 'footer': 'footer'}]
-        \ }
+  let g:textobj_functioncall_patterns = [{'header': '', 'bra': '(', 'ket': ')', 'footer': 'footer'}]
   let testset = [
         \   {
         \     'buffer': ['call (foo)footer'],
@@ -339,7 +337,7 @@ function! s:suite.filetype() dict abort "{{{
         \     },
         \   },
         \ ]
-  setlocal filetype=vim
+  runtime ftplugin/vim/textobj_functioncall.vim
   call s:trytestset(testset)
 endfunction
 "}}}
@@ -460,15 +458,12 @@ function! s:suite.nastycases() dict abort "{{{
         \     },
         \   },
         \ ]
-  syntax enable
-  setlocal filetype=vim
+  runtime syntax/vim.vim
   call s:trytestset(testset)
 endfunction
 "}}}
 function! s:suite.longbraket() dict abort "{{{
-  let g:textobj_functioncall_patterns = {
-        \   '_': [{'header': 'foo', 'bra': '{(', 'ket': ')}', 'footer': ''}]
-        \ }
+  let g:textobj_functioncall_patterns = [{'header': 'foo', 'bra': '{(', 'ket': ')}', 'footer': ''}]
   let testset = [
         \   {
         \     'buffer': ['call foo{(bar)}'],
@@ -518,9 +513,7 @@ function! s:suite.longbraket() dict abort "{{{
 
 
 
-  let g:textobj_functioncall_patterns = {
-        \   '_': [{'header': '', 'bra': '{(', 'ket': ')}', 'footer': 'foo'}]
-        \ }
+  let g:textobj_functioncall_patterns = [{'header': '', 'bra': '{(', 'ket': ')}', 'footer': 'foo'}]
   let testset = [
         \   {
         \     'buffer': ['call {(bar)}foo'],
