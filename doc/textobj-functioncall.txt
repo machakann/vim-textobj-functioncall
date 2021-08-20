@@ -1,5 +1,5 @@
 *textobj-functioncall.txt*	Select a region that calls function.
-						Last change:16-Feb-2019.
+						Last change:20-Aug-2021.
 
 Author  : machakann <mckn@outlook.jp>
 License : NYSL license
@@ -122,6 +122,67 @@ keymappings~
 <Plug>(textobj-functioncall-innerparen-a)
 	This keymapping selects a argument part of function-call-like region.
 	It searches in the same way with |<Plug>(textobj-functioncall-a)|.
+
+------------------------------------------------------------------------------
+keymapping functions~
+
+The functions listed below enable to define new (independent) keymappings.
+
+					*textobjtextobj#functioncall#i()*
+textobjtextobj#functioncall#i({mode} [, {patternlist}])
+
+					*textobjtextobj#functioncall#a()*
+textobjtextobj#functioncall#a({mode} [, {patternlist}])
+
+					*textobjtextobj#functioncall#ip()*
+textobjtextobj#functioncall#ip({mode} [, {patternlist}])
+
+					*textobjtextobj#functioncall#ap()*
+textobjtextobj#functioncall#ap({mode} [, {patternlist}])
+
+	These functions are employed to define a textobject keymapping.
+	For instance, the default keymapping |<Plug>(textobj-functioncall-i)|
+	is defined by |textobjtextobj#functioncall#i()|.
+>
+	onoremap <silent> <Plug>(textobj-functioncall-i)
+		\ :<C-u>call textobj#functioncall#i('o')<CR>
+
+	xnoremap <silent> <Plug>(textobj-functioncall-i)
+		\ :<C-u>call textobj#functioncall#i('x')<CR>
+<
+	Similarly, |<Plug>(textobj-functioncall-innerparen-i)| is defined
+	by |textobjtextobj#functioncall#ip()|.
+>
+	onoremap <silent> <Plug>(textobj-functioncall-innerparen-i)
+		\ :<C-u>call textobj#functioncall#ip('o')<CR>
+	xnoremap <silent> <Plug>(textobj-functioncall-innerparen-i)
+		\ :<C-u>call textobj#functioncall#ip('x')<CR>
+<
+	The optional argument {patternlist} is useful when user wants to make
+	a new keymapping which ignores |g:textobj_functioncall_patterns|.
+	The following example shows how to make new keymappings `i$` and `a$`
+	for selecting texts like `${foo}` without interfering with
+	|g:textobj_functioncall_patterns| and the default keymappings.
+>
+	let s:patternlist = [
+		\   {
+		\     'header': '\$'
+		\     'bra': '{'
+		\     'ket': '}'
+		\     'footer': ''
+		\   }
+		\ ]
+
+	onoremap <silent> i$
+		\ :<C-u>call textobj#functioncall#i('o', s:patternlist)<CR>
+	xnoremap <silent> i$
+		\ :<C-u>call textobj#functioncall#i('x', s:patternlist)<CR>
+
+	onoremap <silent> a$
+		\ :<C-u>call textobj#functioncall#a('o', s:patternlist)<CR>
+	xnoremap <silent> a$
+		\ :<C-u>call textobj#functioncall#a('x', s:patternlist)<CR>
+<
 
 ==============================================================================
 CONFIGURATION				*textobj-functioncall-configuration*

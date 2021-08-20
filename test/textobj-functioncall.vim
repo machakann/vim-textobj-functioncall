@@ -562,6 +562,31 @@ function! s:suite.longbraket() dict abort "{{{
   call s:trytestset(testset)
 endfunction
 "}}}
+function! s:suite.independentkeymapping() dict abort "{{{
+  onoremap <silent> <Plug>(myfunctioncall-i)  :<C-u>call textobj#functioncall#i('o', [{'header': '\$', 'bra': '{', 'ket': '}', 'footer': ''}])<CR>
+  xnoremap <silent> <Plug>(myfunctioncall-i)  :<C-u>call textobj#functioncall#i('x', [{'header': '\$', 'bra': '{', 'ket': '}', 'footer': ''}])<CR>
+  onoremap <silent> <Plug>(myfunctioncall-a)  :<C-u>call textobj#functioncall#a('o', [{'header': '\$', 'bra': '{', 'ket': '}', 'footer': ''}])<CR>
+  xnoremap <silent> <Plug>(myfunctioncall-a)  :<C-u>call textobj#functioncall#a('x', [{'header': '\$', 'bra': '{', 'ket': '}', 'footer': ''}])<CR>
+
+  let testset = [
+        \   {
+        \     'buffer': ['call ${foo}'],
+        \     'input': '5ly%s',
+        \     'expect': {
+        \       "\<Plug>(textobj-functioncall-i)": "",
+        \       "\<Plug>(textobj-functioncall-a)": "",
+        \       "\<Plug>(myfunctioncall-i)": "${foo}",
+        \       "\<Plug>(myfunctioncall-a)": "${foo}",
+        \     },
+        \   },
+        \ ]
+  call s:trytestset(testset)
+
+  ounmap <Plug>(myfunctioncall-i)
+  xunmap <Plug>(myfunctioncall-i)
+  ounmap <Plug>(myfunctioncall-a)
+  xunmap <Plug>(myfunctioncall-a)
+endfunction "}}}
 
 function! s:trytestset(testset) abort "{{{
   for test in a:testset

@@ -28,23 +28,27 @@ let g:textobj_functioncall_default_patterns = [
 lockvar! g:textobj_functioncall_default_patterns
 
 
-function! textobj#functioncall#i(mode) abort
-  call s:prototype('i', a:mode)
+function! textobj#functioncall#i(mode, ...) abort
+  call call("s:prototype", ['i', a:mode] + a:000)
 endfunction
-function! textobj#functioncall#a(mode) abort
-  call s:prototype('a', a:mode)
+function! textobj#functioncall#a(mode, ...) abort
+  call call("s:prototype", ['a', a:mode] + a:000)
 endfunction
-function! textobj#functioncall#ip(mode) abort
-  call s:prototype('ip', a:mode)
+function! textobj#functioncall#ip(mode, ...) abort
+  call call("s:prototype", ['ip', a:mode] + a:000)
 endfunction
-function! textobj#functioncall#ap(mode) abort
-  call s:prototype('ap', a:mode)
+function! textobj#functioncall#ap(mode, ...) abort
+  call call("s:prototype", ['ap', a:mode] + a:000)
 endfunction
 
 
-function! s:prototype(kind, mode) abort
+function! s:prototype(kind, mode, ...) abort
   let l:count = v:count1
-  let pattern_list = s:resolve_patterns()
+  if a:0
+    let pattern_list = a:1
+  else
+    let pattern_list = s:resolve_patterns()
+  endif
   let searchlines = s:get('textobj_sandwich_function_searchlines' , 30)
   let stopline = {}
   if searchlines < 0

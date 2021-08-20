@@ -1,5 +1,5 @@
 *textobj-functioncall.txt*	関数を呼んでるっぽい箇所を選択する。
-						Last change:16-Feb-2019.
+						Last change:20-Aug-2021.
 
 書いた人   : machakann <mckn@outlook.jp>
 ライセンス : NYSL license
@@ -123,6 +123,68 @@ keymappings~
 	関数呼び出し様の部分の括弧内のみを選択します。対象は
 	|<Plug>(textobj-functioncall-a)| と同様の方法により検索します。
 
+------------------------------------------------------------------------------
+キーマッピング関数~
+
+以下の関数は新しい（独立した）キーマッピングを定義するのに使えます。
+
+					*textobjtextobj#functioncall#i()*
+textobjtextobj#functioncall#i({mode} [, {patternlist}])
+
+					*textobjtextobj#functioncall#a()*
+textobjtextobj#functioncall#a({mode} [, {patternlist}])
+
+					*textobjtextobj#functioncall#ip()*
+textobjtextobj#functioncall#ip({mode} [, {patternlist}])
+
+					*textobjtextobj#functioncall#ap()*
+textobjtextobj#functioncall#ap({mode} [, {patternlist}])
+
+	これらの関数はテキストオブジェクトのキーマッピングを定義するのに使われ
+	ています。例えば、デフォルトのキーマッピング
+	|<Plug>(textobj-functioncall-i)| は |textobjtextobj#functioncall#i()|
+	を使って定義されています。
+>
+	onoremap <silent> <Plug>(textobj-functioncall-i)
+		\ :<C-u>call textobj#functioncall#i('o')<CR>
+
+	xnoremap <silent> <Plug>(textobj-functioncall-i)
+		\ :<C-u>call textobj#functioncall#i('x')<CR>
+<
+	同様に |<Plug>(textobj-functioncall-innerparen-i)| は
+	|textobjtextobj#functioncall#ip()|を使って定義されています。
+>
+	onoremap <silent> <Plug>(textobj-functioncall-innerparen-i)
+		\ :<C-u>call textobj#functioncall#ip('o')<CR>
+	xnoremap <silent> <Plug>(textobj-functioncall-innerparen-i)
+		\ :<C-u>call textobj#functioncall#ip('x')<CR>
+<
+	省略可能な引数の {patternlist} が与えられた場合は、そのキーマッピング
+	は |g:textobj_functioncall_patterns| を無視して {patternlist} を代わり
+	に使います。以下の例は `${foo}` のような文字列を選択するための新しいテ
+	キストオブジェクト `i$`, `a$` を定義する方法を示しています。これらのキ
+	ーマッピングは |g:textobj_functioncall_patterns| の変更を必要とせず、
+	デフォルトのキーマッピングと干渉しません。
+>
+	let s:patternlist = [
+		\   {
+		\     'header': '\$'
+		\     'bra': '{'
+		\     'ket': '}'
+		\     'footer': ''
+		\   }
+		\ ]
+
+	onoremap <silent> i$
+		\ :<C-u>call textobj#functioncall#i('o', s:patternlist)<CR>
+	xnoremap <silent> i$
+		\ :<C-u>call textobj#functioncall#i('x', s:patternlist)<CR>
+
+	onoremap <silent> a$
+		\ :<C-u>call textobj#functioncall#a('o', s:patternlist)<CR>
+	xnoremap <silent> a$
+		\ :<C-u>call textobj#functioncall#a('x', s:patternlist)<CR>
+<
 ==============================================================================
 CONFIGURATION				*textobj-functioncall-configuration*
 
