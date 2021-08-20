@@ -164,7 +164,7 @@ textobjtextobj#functioncall#ap({mode} [, {patternlist}])
 	for selecting texts like `${foo}` without interfering with
 	|g:textobj_functioncall_patterns| and the default keymappings.
 >
-	let s:patternlist = [
+	let g:patternlist = [
 		\   {
 		\     'header': '\$'
 		\     'bra': '{'
@@ -174,14 +174,14 @@ textobjtextobj#functioncall#ap({mode} [, {patternlist}])
 		\ ]
 
 	onoremap <silent> i$
-		\ :<C-u>call textobj#functioncall#i('o', s:patternlist)<CR>
+		\ :<C-u>call textobj#functioncall#i('o', g:patternlist)<CR>
 	xnoremap <silent> i$
-		\ :<C-u>call textobj#functioncall#i('x', s:patternlist)<CR>
+		\ :<C-u>call textobj#functioncall#i('x', g:patternlist)<CR>
 
 	onoremap <silent> a$
-		\ :<C-u>call textobj#functioncall#a('o', s:patternlist)<CR>
+		\ :<C-u>call textobj#functioncall#a('o', g:patternlist)<CR>
 	xnoremap <silent> a$
-		\ :<C-u>call textobj#functioncall#a('x', s:patternlist)<CR>
+		\ :<C-u>call textobj#functioncall#a('x', g:patternlist)<CR>
 <
 
 ==============================================================================
